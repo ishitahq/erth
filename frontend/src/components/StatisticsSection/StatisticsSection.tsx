@@ -45,7 +45,7 @@ export const StatisticsSection = () => {
           transition={{ duration: 0.8 }}
           className="text-center mb-12 md:mb-20"
         >
-          <p className="text-emerald-400 text-sm md:text-base uppercase tracking-widest mb-4 font-semibold">
+          <p className="text-[#7ed957] text-sm md:text-base uppercase tracking-widest mb-4 font-semibold">
             The Plastic Crisis
           </p>
           <h2 className="heading-section mb-6">
@@ -73,8 +73,8 @@ export const StatisticsSection = () => {
                 <div
                   className="stat-bar flex flex-col justify-start"
                   style={{
-                    height: `clamp(8rem, ${heightPercent * 0.22}vw, ${heightPercent * 3.2}px)`,
-                    minHeight: `${heightPercent * 2.5}px`,
+                    height: `clamp(12rem, ${heightPercent * 0.35}vw, ${heightPercent * 5.5}px)`,
+                    minHeight: `${heightPercent * 4}px`,
                   }}
                 >
                   <span className="text-3xl md:text-5xl lg:text-6xl font-black text-site-black/80">

@@ -35,7 +35,7 @@ export const Footer = () => {
           >
             Classify Plastic.
             <br />
-            <span className="bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#7ed957] to-[#7ed957] bg-clip-text text-transparent">
               Save the Planet.
             </span>
           </motion.h2>
@@ -57,7 +57,7 @@ export const Footer = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="btn-dark !bg-emerald-600 hover:!bg-emerald-700"
+            className="btn-dark !bg-[#7ed957] hover:!bg-[#5cb83f]"
           >
             Back to Top ↑
           </motion.a>
@@ -136,7 +136,7 @@ export const Footer = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="text-3xl md:text-5xl font-black text-emerald-400"
+            className="text-3xl md:text-5xl font-black text-[#7ed957]"
           >
             {plasticNames[currentIndex]}
           </motion.p>

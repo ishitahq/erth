@@ -46,8 +46,7 @@ export const Header = () => {
     <>
       {/* Top Banner */}
       <div className="gov-banner">
-        <span className="mr-2">♻️</span>
-        AI-POWERED PLASTIC WASTE CLASSIFICATION SYSTEM
+        🌍 Transforming Waste Management with AI
       </div>
 
       {/* Floating Nav Pill */}
@@ -66,7 +65,7 @@ export const Header = () => {
             <div
               className={`w-2 h-2 rounded-full transition-all duration-300 ${
                 activeSection === section.id
-                  ? 'bg-emerald-400 scale-125'
+                  ? 'bg-[#7ed957] scale-125'
                   : 'bg-gray-500 group-hover:bg-gray-300'
               }`}
             />

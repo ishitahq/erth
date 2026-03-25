@@ -16,7 +16,7 @@ export const FAQSection = () => {
           transition={{ duration: 0.8 }}
           className="mb-12 md:mb-16"
         >
-          <p className="text-emerald-600 text-sm md:text-base uppercase tracking-widest mb-4 font-semibold">
+          <p className="text-[#7ed957] text-sm md:text-base uppercase tracking-widest mb-4 font-semibold">
             Common Questions
           </p>
           <h2 className="heading-section-dark mb-4">
