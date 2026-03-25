@@ -1,8 +1,46 @@
+import { useRef, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
+const fullText =
+  'Using deep learning and computer vision, we can automatically classify plastic waste into specific types with high accuracy — even when plastic is dirty, deformed, or mixed. This enables faster, more reliable recycling at scale.';
+
 export const SolutionSection = () => {
+  const textRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const [revealProgress, setRevealProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!sectionRef.current) return;
+      const rect = sectionRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+
+      // Start revealing when section enters viewport, complete when section is centered
+      const sectionTop = rect.top;
+      const sectionHeight = rect.height;
+
+      // Calculate progress: 0 when section top enters viewport, 1 when section is fully scrolled through
+      const start = windowHeight * 0.8;
+      const end = -sectionHeight * 0.3;
+      const progress = Math.min(1, Math.max(0, (start - sectionTop) / (start - end)));
+
+      setRevealProgress(progress);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial check
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Split text into individual characters for per-character reveal
+  const chars = fullText.split('');
+
   return (
-    <section id="solution" className="section-dark section-padding relative overflow-hidden">
+    <section
+      ref={sectionRef}
+      id="solution"
+      className="section-dark section-padding relative overflow-hidden"
+    >
       {/* Background AI image */}
       <div
         className="absolute inset-0 opacity-10 bg-cover bg-center"
@@ -36,22 +74,27 @@ export const SolutionSection = () => {
             </span>
           </h2>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="mt-8 md:mt-12 body-large max-w-4xl mx-auto"
+          {/* Scroll-reveal text: grey → white character by character */}
+          <div
+            ref={textRef}
+            className="mt-8 md:mt-12 text-xl md:text-2xl lg:text-3xl leading-relaxed max-w-4xl mx-auto font-medium"
           >
-            <span className="text-site-text-light">
-              Using deep learning and computer vision, we can automatically classify
-              plastic waste into specific types with high accuracy —
-            </span>{' '}
-            <span className="text-site-text-muted">
-              even when plastic is dirty, deformed, or mixed. This enables faster,
-              more reliable recycling at scale.
-            </span>
-          </motion.p>
+            {chars.map((char, i) => {
+              const charProgress = i / chars.length;
+              const isRevealed = revealProgress > charProgress;
+              return (
+                <span
+                  key={i}
+                  style={{
+                    color: isRevealed ? '#f2efea' : 'rgba(255,255,255,0.25)',
+                    transition: 'color 0.15s ease',
+                  }}
+                >
+                  {char}
+                </span>
+              );
+            })}
+          </div>
 
           {/* Tech stack badges */}
           <motion.div

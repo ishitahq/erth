@@ -7,47 +7,47 @@ export interface FAQItem {
 export const faqData: FAQItem[] = [
   {
     id: 1,
-    question: "What types of plastic can the system classify?",
-    answer: "The system classifies plastics into six categories: PET (Polyethylene Terephthalate), HDPE (High-Density Polyethylene), LDPE (Low-Density Polyethylene), PP (Polypropylene), PS (Polystyrene), and Other/Unknown plastics. These cover virtually all consumer plastic waste."
+    question: "What is the ROI of deploying Erth in our facility?",
+    answer: "Facilities typically see a 25–40% improvement in sorting accuracy within the first quarter. This translates to higher-quality recyclate output, reduced contamination penalties, lower manual labor costs, and increased revenue from properly sorted materials. Most clients achieve full ROI within 6–12 months."
   },
   {
     id: 2,
-    question: "How does the AI classify plastic from images?",
-    answer: "The system uses a Convolutional Neural Network (CNN) trained on thousands of labeled plastic waste images. It analyzes visual features like texture, transparency, shape, and surface patterns to predict the plastic type. Transfer learning from models like ResNet or EfficientNet is used to boost accuracy."
+    question: "How does Erth integrate with our existing sorting infrastructure?",
+    answer: "Erth is designed to be retrofit-friendly. It connects to existing conveyor systems via standard industrial camera mounts and communicates with PLCs through common protocols (Modbus, OPC-UA). Our deployment team handles calibration, integration testing, and staff training with minimal disruption to your operations."
   },
   {
     id: 3,
-    question: "Can it handle dirty or deformed plastic?",
-    answer: "Yes. The model is trained with extensive data augmentation including random rotations, lighting variations, noise injection, and simulated dirt/damage. This ensures robust performance on real-world waste that may be crushed, dirty, or partially obscured."
+    question: "What throughput can the system handle?",
+    answer: "Erth processes images in real-time at conveyor speeds up to 3 m/s. A single camera unit can classify up to 60 items per minute. For higher-volume lines, multiple camera units can be deployed in parallel with a centralized dashboard for monitoring and analytics."
   },
   {
     id: 4,
-    question: "What accuracy does the model achieve?",
-    answer: "The model targets over 90% accuracy across all plastic categories. Per-class precision and recall are tracked to identify and minimize misclassification between visually similar categories like PET and PS, or HDPE and PP."
+    question: "How accurate is the classification, and how do you handle misclassification?",
+    answer: "Our model achieves over 92% accuracy across all six plastic categories (PET, HDPE, LDPE, PP, PS, and Other). Every prediction includes a confidence score — items below the configurable threshold are flagged for manual review, ensuring contamination rates stay well below industry benchmarks."
   },
   {
     id: 5,
-    question: "Why is correct plastic classification important?",
-    answer: "Incorrect classification leads to contamination in recycling streams. For example, mixing PET with PVC can ruin an entire batch of recycled material. Accurate sorting improves recycled material quality, increases economic value, and reduces landfill waste."
+    question: "Does the system work with dirty, crushed, or mixed plastic waste?",
+    answer: "Yes. The model is trained on real-world waste images including items that are dirty, deformed, partially labeled, and mixed. Advanced data augmentation during training ensures robust performance across the full range of conditions found in MRFs and recycling plants."
   },
   {
     id: 6,
-    question: "Can this system be deployed at the edge?",
-    answer: "Yes. The system supports lightweight model variants optimized for edge deployment using techniques like model pruning, quantization, and knowledge distillation. This enables real-time classification on conveyor belts, mobile devices, or IoT sensors in recycling facilities."
+    question: "What kind of maintenance and support is included?",
+    answer: "Erth includes over-the-air model updates, 24/7 remote monitoring, and quarterly performance reviews. Our support team provides on-site maintenance for camera hardware and continuous model retraining on your facility's specific waste stream to improve accuracy over time."
   },
   {
     id: 7,
-    question: "Does the system provide confidence scores?",
-    answer: "Yes. Each prediction comes with a confidence score indicating how certain the model is about its classification. Low-confidence predictions can be flagged for human review, reducing the risk of contamination in recycling streams."
+    question: "Can Erth generate compliance reports and analytics?",
+    answer: "Absolutely. The management dashboard provides real-time sorting metrics, contamination rate tracking, throughput analytics, and exportable reports aligned with EPR regulations and ISO standards. Custom reporting for audits and sustainability disclosures is also available."
   },
   {
     id: 8,
-    question: "What data was used to train the model?",
-    answer: "The model is trained on publicly available plastic waste image datasets combined with custom-collected images. The dataset undergoes preprocessing (resizing, normalization) and augmentation (flipping, rotation, color jitter, noise) to ensure diversity and generalization."
+    question: "What is the deployment timeline from purchase to production?",
+    answer: "A standard deployment takes 4–6 weeks: site assessment (1 week), hardware installation and integration (2 weeks), model calibration on your waste stream (1 week), and staff training plus go-live support (1–2 weeks). Expedited deployment is available for urgent requirements."
   },
   {
     id: 9,
-    question: "Can it estimate the volume of plastic waste?",
-    answer: "As an optional enhancement, the system can estimate volumetric characteristics of plastic waste from images using depth estimation or reference-object scaling. This helps recycling facilities estimate throughput and plan processing capacity."
+    question: "Is Erth scalable across multiple facility locations?",
+    answer: "Yes. Erth supports multi-site deployment with a unified cloud dashboard for centralized monitoring. Each facility's model can be independently fine-tuned for local waste stream characteristics while sharing aggregate analytics and best practices across your entire operation."
   }
 ];

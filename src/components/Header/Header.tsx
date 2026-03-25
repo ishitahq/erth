@@ -5,8 +5,6 @@ const sections = [
   { id: 'statistics', label: 'The Problem' },
   { id: 'solution', label: 'The Solution' },
   { id: 'plastic-types', label: 'Plastic Types' },
-  { id: 'features', label: 'Features' },
-  { id: 'pipeline', label: 'How It Works' },
   { id: 'deliverables', label: 'Deliverables' },
   { id: 'faq', label: 'FAQs' },
 ];

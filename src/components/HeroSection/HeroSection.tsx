@@ -1,5 +1,11 @@
 import { motion } from 'framer-motion';
 
+const words = [
+  { text: 'Classify.', gradient: false },
+  { text: 'Recycle.', gradient: true },
+  { text: 'Sustain.', gradient: false },
+];
+
 export const HeroSection = () => {
   return (
     <section id="hero" className="section-dark min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
@@ -10,35 +16,42 @@ export const HeroSection = () => {
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/80 to-black" />
 
-      <div className="section-container text-center py-20 md:py-32 lg:py-40 relative z-10">
+      <div className="section-container text-center py-10 md:py-16 lg:py-20 relative z-10">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6 }}
-          className="mb-6"
+          className="mb-4"
         >
-          <span className="inline-block text-6xl md:text-7xl mb-4">♻️</span>
+          <span className="inline-block text-5xl md:text-6xl mb-2">♻️</span>
         </motion.div>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="heading-hero mb-8 md:mb-12"
-        >
-          Classify.
-          <br />
-          <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-            Recycle.
-          </span>
-          <br />
-          Sustain.
-        </motion.h1>
+        <h1 className="heading-hero mb-8 md:mb-12 flex items-center justify-center gap-x-3 md:gap-x-5 lg:gap-x-6 whitespace-nowrap text-[clamp(2rem,7vw,5rem)] md:text-[clamp(3rem,8vw,6rem)] lg:text-[clamp(4rem,9vw,7.5rem)]">
+          {words.map((word, index) => (
+            <motion.span
+              key={word.text}
+              initial={{ opacity: 0, y: -80 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.7,
+                delay: index * 0.25,
+                ease: [0.34, 1.56, 0.64, 1], // spring-like bounce
+              }}
+              className={
+                word.gradient
+                  ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent inline-block'
+                  : 'inline-block'
+              }
+            >
+              {word.text}
+            </motion.span>
+          ))}
+        </h1>
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.5, ease: 'easeOut' }}
+          transition={{ duration: 0.8, delay: 0.9, ease: 'easeOut' }}
           className="text-lg md:text-xl lg:text-2xl text-site-text-muted max-w-3xl mx-auto mb-10 md:mb-14 leading-relaxed"
         >
           An AI-powered system that automatically classifies plastic waste into specific
@@ -49,7 +62,7 @@ export const HeroSection = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.9 }}
+          transition={{ duration: 0.6, delay: 1.2 }}
           className="flex flex-wrap gap-4 justify-center"
         >
           <a href="#features" className="btn-cta !bg-emerald-500 hover:!bg-emerald-600 !shadow-emerald-500/30 hover:!shadow-emerald-500/50">
@@ -65,7 +78,7 @@ export const HeroSection = () => {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.5 }}
+        transition={{ delay: 1.8 }}
         className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
       >
         <motion.div

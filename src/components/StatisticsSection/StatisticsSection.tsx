@@ -31,7 +31,8 @@ const AnimatedCounter = ({ target, isVisible }: { target: number; isVisible: boo
 export const StatisticsSection = () => {
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.2 });
 
-  const barHeights = ['h-40 md:h-56', 'h-48 md:h-64', 'h-56 md:h-80'];
+  // Compute bar heights proportional to percentages (max percentage = tallest bar)
+  const maxPercentage = Math.max(...statisticsData.map((s) => s.percentage));
 
   return (
     <section id="statistics" className="section-dark section-padding">
@@ -54,46 +55,40 @@ export const StatisticsSection = () => {
           </h2>
         </motion.div>
 
-        {/* Red Bar Stats with counters */}
+        {/* Bar Stats with scroll-triggered animation */}
         <div ref={ref} className="grid grid-cols-3 gap-4 md:gap-8 items-end mb-16 max-w-5xl mx-auto">
-          {statisticsData.map((stat, index) => (
-            <motion.div
-              key={stat.id}
-              initial={{ opacity: 0, scaleY: 0 }}
-              animate={isVisible ? { opacity: 1, scaleY: 1 } : {}}
-              transition={{ duration: 0.8, delay: index * 0.2, ease: 'easeOut' }}
-              style={{ transformOrigin: 'bottom' }}
-              className="flex flex-col items-stretch"
-            >
-              <div className={`stat-bar ${barHeights[index]} flex flex-col justify-start`}>
-                <span className="text-3xl md:text-5xl lg:text-6xl font-black text-site-black/80">
-                  <AnimatedCounter target={stat.percentage} isVisible={isVisible} />%
-                </span>
-              </div>
-              <p className="mt-4 text-sm md:text-base lg:text-lg font-bold text-site-text-light leading-snug">
-                {stat.label}{' '}
-                <span className="text-site-red">{stat.highlight}</span>
-              </p>
-            </motion.div>
-          ))}
-        </div>
+          {statisticsData.map((stat, index) => {
+            // Calculate height proportional to percentage value
+            const heightPercent = (stat.percentage / maxPercentage) * 100;
 
-        {/* Bottom text */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="body-large text-center max-w-4xl mx-auto mt-16"
-        >
-          <span className="text-site-text-light">
-            Manual plastic identification is slow, error-prone, and inconsistent.
-          </span>{' '}
-          <span className="text-site-text-muted">
-            Misclassification contaminates recycling streams, reduces material value, and sends
-            recyclable plastic to landfills.
-          </span>
-        </motion.p>
+            return (
+              <motion.div
+                key={stat.id}
+                initial={{ opacity: 0, scaleY: 0 }}
+                animate={isVisible ? { opacity: 1, scaleY: 1 } : { opacity: 0, scaleY: 0 }}
+                transition={{ duration: 0.8, delay: index * 0.2, ease: 'easeOut' }}
+                style={{ transformOrigin: 'bottom' }}
+                className="flex flex-col items-stretch"
+              >
+                <div
+                  className="stat-bar flex flex-col justify-start"
+                  style={{
+                    height: `clamp(8rem, ${heightPercent * 0.22}vw, ${heightPercent * 3.2}px)`,
+                    minHeight: `${heightPercent * 2.5}px`,
+                  }}
+                >
+                  <span className="text-3xl md:text-5xl lg:text-6xl font-black text-site-black/80">
+                    <AnimatedCounter target={stat.percentage} isVisible={isVisible} />%
+                  </span>
+                </div>
+                <p className="mt-4 text-sm md:text-base lg:text-lg font-bold text-site-text-light leading-snug">
+                  {stat.label}{' '}
+                  <span className="text-site-red">{stat.highlight}</span>
+                </p>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

@@ -4,9 +4,7 @@ import HeroSection from './components/HeroSection/HeroSection'
 import StatisticsSection from './components/StatisticsSection/StatisticsSection'
 import SolutionSection from './components/SolutionSection/SolutionSection'
 import PlasticTypesSection from './components/FoodPyramid/FoodPyramid'
-import FeaturesSection from './components/ChatbotSection/ChatbotSection'
 import DeliverablesSection from './components/ResourcesSection/ResourcesSection'
-import PipelineSection from './components/PolicySection/PolicySection'
 import FAQSection from './components/FAQSection/FAQSection'
 import Footer from './components/Footer/Footer'
 
@@ -19,8 +17,6 @@ function App() {
         <StatisticsSection />
         <SolutionSection />
         <PlasticTypesSection />
-        <FeaturesSection />
-        <PipelineSection />
         <DeliverablesSection />
         <FAQSection />
       </main>
