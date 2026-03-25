@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
-const plasticNames = ['PET', 'HDPE', 'LDPE', 'PP', 'PS', 'Other'];
-const plasticEmojis = ['🧴', '🥛', '🛍️', '🥤', '☕', '🔬'];
+const plasticNames = ['PET', 'HDPE', 'LDPE', 'PP', 'PS', 'PVC'];
+const plasticImages = [
+  '/images/pet.png',
+  '/images/hdpe.png',
+  '/images/ldpe.png',
+  '/images/pp.png',
+  '/images/ps.png',
+  '/images/pvc.png',
+];
 
 export const Footer = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -67,7 +74,7 @@ export const Footer = () => {
           {/* Rotating Plastic Type Carousel */}
           <div className="flex justify-center items-center gap-6 mb-6">
             {[-1, 0, 1].map((offset) => {
-              const idx = (currentIndex + offset + plasticEmojis.length) % plasticEmojis.length;
+              const idx = (currentIndex + offset + plasticImages.length) % plasticImages.length;
               const isCenter = offset === 0;
               return (
                 <motion.div
@@ -81,9 +88,44 @@ export const Footer = () => {
                     isCenter ? 'w-28 h-28 md:w-36 md:h-36' : 'w-20 h-20 md:w-24 md:h-24'
                   }`}
                 >
-                  <span className={isCenter ? 'text-6xl md:text-7xl' : 'text-4xl md:text-5xl'}>
-                    {plasticEmojis[idx]}
-                  </span>
+                  <img
+                    src={plasticImages[idx]}
+                    alt={plasticNames[idx]}
+                    className="w-full h-full object-cover rounded-2xl"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = 'none';
+                      (e.currentTarget.nextSibling as HTMLElement).style.display = 'flex';
+                    }}
+                  />
+                  <div
+                    style={{ display: 'none' }}
+                    className="w-full h-full flex-col items-center justify-center gap-1.5"
+                  >
+                    <svg
+                      width={isCenter ? 28 : 20}
+                      height={isCenter ? 28 : 20}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="rgba(255,255,255,0.35)"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <path d="M21 15l-5-5L5 21" />
+                    </svg>
+                    <span
+                      style={{
+                        fontSize: isCenter ? 11 : 9,
+                        color: 'rgba(255,255,255,0.3)',
+                        fontWeight: 600,
+                        letterSpacing: '0.08em',
+                      }}
+                    >
+                      {plasticNames[idx]}.jpg
+                    </span>
+                  </div>
                 </motion.div>
               );
             })}
