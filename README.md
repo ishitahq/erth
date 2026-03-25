@@ -1,73 +1,160 @@
-# React + TypeScript + Vite
+# ♻️ Erth — AI-Powered Plastic Waste Classification System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Erth is an AI/ML-based system that automatically classifies plastic waste into specific types using images — enabling smarter recycling, reducing contamination, and building a circular economy.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🌍 Problem Context
 
-## React Compiler
+Plastic waste is one of the most critical environmental challenges due to its non-biodegradable nature and long-term ecological impact. Recycling is key to building sustainable and circular economies, but its effectiveness depends on correctly identifying plastic types.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Different plastics — **PET, HDPE, LDPE, PP, and PS** — have unique chemical properties, melting points, and recycling methods. Incorrect classification leads to:
 
-## Expanding the ESLint configuration
+- **Contamination** of recycling streams
+- **Reduced quality** of recycled materials
+- **Lower economic value** of output
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Currently, plastic identification in recycling facilities is mostly **manual**, making the process slow, labor-intensive, and prone to errors — especially with dirty, mixed, or deformed plastic waste.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 🎯 The Core Challenge
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Develop an AI/ML-based system that can automatically classify plastic waste into specific types using images.
+
+The system must:
+
+- Accurately distinguish between visually similar plastic categories
+- Handle real-world conditions such as dirt, deformation, and lighting variations
+- Minimize misclassification to reduce contamination in recycling streams
+- Generalize well across diverse datasets and environments
+
+---
+
+## ✨ Features
+
+### Core Features
+
+- **Image-based classification** of plastic waste
+- **Multi-class prediction** across categories:
+
+| Code | Plastic Type | Description |
+|------|-------------|-------------|
+| #1 | **PET** | Polyethylene Terephthalate |
+| #2 | **HDPE** | High-Density Polyethylene |
+| #3 | **LDPE** | Low-Density Polyethylene |
+| #4 | **PP** | Polypropylene |
+| #5 | **PS** | Polystyrene |
+| #6 | **Other** | Mixed / Unknown Plastics |
+
+- **Robust performance** on real-world waste images (dirty, deformed, mixed)
+
+### Optional Enhancements
+
+- 📊 **Confidence score** for each prediction
+- 🏷️ **Hierarchical classification** (Type → Grade)
+- ⚡ **Lightweight model** for edge deployment
+- 📐 **Volumetric estimation** of plastic waste using images
+
+---
+
+## 📦 Expected Output
+
+The final system delivers:
+
+1. **Trained ML Model** — Capable of classifying plastic types from images
+2. **Dataset Documentation** — Sources, preprocessing steps, and augmentation techniques
+3. **Performance Evaluation** using:
+   - Accuracy
+   - Precision and Recall (per plastic category)
+   - Confusion Matrix
+4. **Working Demonstration** — Web application, REST API, or Jupyter notebook
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React, TypeScript, Vite, Tailwind CSS |
+| Animations | Framer Motion |
+| ML Model | CNN with Transfer Learning (ResNet / EfficientNet) |
+| Training | Data Augmentation, Fine-tuning |
+| Deployment | Web App, REST API, Edge Devices |
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v18+)
+- npm or yarn
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/your-username/erth.git
+cd erth/frontend
+
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The app will be running at `http://localhost:5173`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Production Build
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build
 ```
+
+---
+
+## 📁 Project Structure
+
+```
+frontend/
+├── src/
+│   ├── components/       # UI components (HeroSection, StatisticsSection, FAQSection, etc.)
+│   ├── data/             # Static data (FAQ, statistics, plastic types, etc.)
+│   ├── hooks/            # Custom React hooks (scroll animations)
+│   ├── utils/            # Utility functions
+│   ├── assets/           # Static assets
+│   ├── App.tsx           # Main application component
+│   ├── index.css         # Global styles and design tokens
+│   └── main.tsx          # Application entry point
+├── public/               # Public assets (images, icons)
+├── index.html            # HTML entry point
+├── tailwind.config.js    # Tailwind CSS configuration
+├── vite.config.ts        # Vite configuration
+└── package.json          # Dependencies and scripts
+```
+
+---
+
+## 📊 ML Pipeline
+
+```
+Data Collection → Preprocessing & Augmentation → Model Training → Evaluation & Optimization → Deployment
+```
+
+1. **Data Collection** — Diverse plastic waste images from public datasets and custom sources
+2. **Preprocessing & Augmentation** — Resize, normalize, rotate, flip, noise, and color jitter
+3. **Model Training** — CNN with transfer learning (ResNet/EfficientNet), fine-tuned on plastic waste
+4. **Evaluation** — Accuracy, precision, recall, confusion matrix, and threshold optimization
+5. **Deployment** — Web app, REST API, or edge device integration
+
+---
+
+## 📄 License
+
+This project is developed as part of an academic / hackathon problem statement on plastic waste classification.
+
+---
+
+> **Erth** — *Classify. Recycle. Sustain.* ♻️
