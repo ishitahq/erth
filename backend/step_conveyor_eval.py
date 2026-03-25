@@ -87,6 +87,46 @@ INFER_TF = transforms.Compose([
                          std=[0.229, 0.224, 0.225]),
 ])
 
+# ── Test-Time Augmentation (TTA) transforms ────────────────────────────────────
+# 8 deterministic views per crop: baseline, flips, rotations, brightness shifts.
+# Averaging softmax over all views reduces sensitivity to pose/lighting variation
+# — the primary source of domain shift on real conveyor footage.
+_norm = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+TTA_TRANSFORMS = [
+    # 1. baseline
+    transforms.Compose([transforms.Resize((IMG_SIZE, IMG_SIZE)),
+                        transforms.ToTensor(), _norm]),
+    # 2. horizontal flip
+    transforms.Compose([transforms.Resize((IMG_SIZE, IMG_SIZE)),
+                        transforms.RandomHorizontalFlip(p=1.0),
+                        transforms.ToTensor(), _norm]),
+    # 3. vertical flip
+    transforms.Compose([transforms.Resize((IMG_SIZE, IMG_SIZE)),
+                        transforms.RandomVerticalFlip(p=1.0),
+                        transforms.ToTensor(), _norm]),
+    # 4. +15° rotation
+    transforms.Compose([transforms.Resize((IMG_SIZE, IMG_SIZE)),
+                        transforms.RandomRotation((15, 15)),
+                        transforms.ToTensor(), _norm]),
+    # 5. −15° rotation
+    transforms.Compose([transforms.Resize((IMG_SIZE, IMG_SIZE)),
+                        transforms.RandomRotation((-15, -15)),
+                        transforms.ToTensor(), _norm]),
+    # 6. h-flip + 10° rotation
+    transforms.Compose([transforms.Resize((IMG_SIZE, IMG_SIZE)),
+                        transforms.RandomHorizontalFlip(p=1.0),
+                        transforms.RandomRotation((10, 10)),
+                        transforms.ToTensor(), _norm]),
+    # 7. 20% brighter
+    transforms.Compose([transforms.Resize((IMG_SIZE, IMG_SIZE)),
+                        transforms.ColorJitter(brightness=(1.2, 1.2)),
+                        transforms.ToTensor(), _norm]),
+    # 8. 25% darker
+    transforms.Compose([transforms.Resize((IMG_SIZE, IMG_SIZE)),
+                        transforms.ColorJitter(brightness=(0.75, 0.75)),
+                        transforms.ToTensor(), _norm]),
+]
+
 
 # ── model ─────────────────────────────────────────────────────────────────────
 def build_model() -> nn.Module:
@@ -169,14 +209,28 @@ def find_xml_for_image(img_path: Path) -> Path | None:
 # ── inference on a single crop ────────────────────────────────────────────────
 @torch.no_grad()
 def predict_crop(model: nn.Module, crop: Image.Image) -> tuple[str, float]:
-    """Returns (predicted_class_or_Unknown, confidence)."""
+    """
+    Returns (predicted_class_or_Unknown, confidence) using Test-Time Augmentation.
+
+    Runs each crop through 8 deterministic augmented views (flips, rotations,
+    brightness shifts) and averages the softmax probabilities before taking
+    argmax.  This reduces sensitivity to pose and lighting variation — the
+    dominant source of domain shift on real conveyor imagery.
+    """
     if crop.width < 2 or crop.height < 2:
         return "Unknown", 0.0
-    tensor = INFER_TF(crop.convert("RGB")).unsqueeze(0).to(DEVICE)
-    logits = model(tensor)
-    probs  = torch.softmax(logits, dim=1).squeeze(0).cpu().tolist()
-    conf   = max(probs)
-    pred_idx = probs.index(conf)
+
+    crop_rgb  = crop.convert("RGB")
+    probs_sum = torch.zeros(NUM_CLASSES, device=DEVICE)
+
+    for tf in TTA_TRANSFORMS:
+        tensor     = tf(crop_rgb).unsqueeze(0).to(DEVICE)
+        probs_sum += torch.softmax(model(tensor), dim=1).squeeze(0)
+
+    avg_probs = probs_sum / len(TTA_TRANSFORMS)
+    conf      = avg_probs.max().item()
+    pred_idx  = avg_probs.argmax().item()
+
     if conf < CONF_THRESHOLD:
         return "Unknown", conf
     return CLASS_NAMES[pred_idx], conf

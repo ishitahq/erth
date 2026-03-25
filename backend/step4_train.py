@@ -18,7 +18,7 @@ Phase 2 — Unified fine-tuning (last 2 feature blocks unfrozen)
 Phase 3 — Full fine-tuning (all layers unfrozen, early stopping)
   Dataset : dataset/unified/
   Epochs  : 30  (+ early stopping, patience=5 on val loss)
-  Optim   : Adam lr=1e-5
+  Optim   : SAM(base=Adam) lr=1e-5, rho=0.05
   Sched   : CosineAnnealingLR(T_max=30)
   Saves   : checkpoints/phase3_best.pth, logs/phase3_log.csv
 
@@ -151,6 +151,77 @@ class FocalLoss(nn.Module):
         focal = ((1.0 - pt) ** self.gamma) * ce      # down-weight easy examples
         return focal.mean()
 
+# ── SAM (Sharpness-Aware Minimization) optimizer ────────────────────────────────
+class SAM(torch.optim.Optimizer):
+    """
+    Sharpness-Aware Minimization (SAM) optimizer.
+
+    Finds flatter loss minima than Adam, which generalise better to
+    out-of-distribution data (e.g. real conveyor images vs. clean training set).
+
+    Two-step update per batch:
+      1. first_step  — perturb weights to local worst-case (rho-ball ascent)
+      2. second_step — restore original weights, apply base-optimizer update
+                       using the gradient computed at the perturbed point
+
+    Reference: Foret et al. 2021 — https://arxiv.org/abs/2010.01412
+    """
+
+    def __init__(
+        self, params, base_optimizer, rho: float = 0.05, **kwargs
+    ) -> None:
+        assert rho >= 0.0, f"Invalid rho: {rho}"
+        super().__init__(params, dict(rho=rho, **kwargs))
+        self.base_optimizer = base_optimizer(self.param_groups, **kwargs)
+        self.param_groups   = self.base_optimizer.param_groups  # shared reference
+
+    @torch.no_grad()
+    def first_step(self, zero_grad: bool = False) -> None:
+        """Perturb weights toward the sharpest loss direction."""
+        grad_norm = self._grad_norm()
+        for group in self.param_groups:
+            scale = group["rho"] / (grad_norm + 1e-12)
+            for p in group["params"]:
+                if p.grad is None:
+                    continue
+                self.state[p]["old_p"] = p.data.clone()
+                p.add_(p.grad * scale)              # ascent step
+        if zero_grad:
+            self.zero_grad()
+
+    @torch.no_grad()
+    def second_step(self, zero_grad: bool = False) -> None:
+        """Restore original weights and apply base-optimizer gradient descent."""
+        for group in self.param_groups:
+            for p in group["params"]:
+                if p.grad is None:
+                    continue
+                p.data = self.state[p]["old_p"]     # restore
+        self.base_optimizer.step()
+        if zero_grad:
+            self.zero_grad()
+
+    def step(self, closure=None) -> None:            # type: ignore[override]
+        raise NotImplementedError(
+            "Call first_step() then second_step() explicitly; "
+            "do not call step() on SAM."
+        )
+
+    def _grad_norm(self) -> torch.Tensor:
+        device = self.param_groups[0]["params"][0].device
+        return torch.norm(
+            torch.stack([
+                p.grad.norm(p=2).to(device)
+                for group in self.param_groups
+                for p in group["params"]
+                if p.grad is not None
+            ]),
+            p=2,
+        )
+
+    def load_state_dict(self, state_dict) -> None:
+        super().load_state_dict(state_dict)
+        self.base_optimizer.param_groups = self.param_groups
 
 # ── model construction ────────────────────────────────────────────────────────
 def build_model() -> nn.Module:
@@ -279,9 +350,18 @@ def run_epoch(
             loss   = criterion(logits, labels)
 
             if training and optimizer is not None:
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+                if isinstance(optimizer, SAM):
+                    # SAM needs two forward/backward passes per batch:
+                    # pass 1 — compute gradient, perturb weights to worst-case
+                    loss.backward()
+                    optimizer.first_step(zero_grad=True)
+                    # pass 2 — compute gradient at perturbed point, then restore
+                    criterion(model(imgs), labels).backward()
+                    optimizer.second_step(zero_grad=True)
+                else:
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
 
             total_loss += loss.item() * imgs.size(0)
             correct    += (logits.argmax(1) == labels).sum().item()
@@ -399,12 +479,13 @@ def main() -> None:
         log_path=LOG_DIR / "phase2_log.csv",
     )
 
-    # ── Phase 3: Unified, full fine-tuning, early stopping ───────────────────
+    # ── Phase 3: Unified, full fine-tuning, SAM + early stopping ─────────────
+    # SAM finds flatter minima → better generalisation to real conveyor images.
     model.load_state_dict(torch.load(CKPT_DIR / "phase2_best.pth"))
     unfreeze_all(model)
 
     train_loader3, val_loader3 = make_loaders(UNIFIED_DIR, batch_size=16)
-    opt3   = Adam(model.parameters(), lr=1e-5)
+    opt3   = SAM(model.parameters(), base_optimizer=Adam, lr=1e-5, rho=0.05)
     sched3 = CosineAnnealingLR(opt3, T_max=30)
 
     train_phase(

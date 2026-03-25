@@ -86,7 +86,7 @@ results/
 
 # Jupyter Notebook
 .ipynb_checkpoints
-*.ipynb
+
 
 # OS
 Thumbs.db
