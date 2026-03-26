@@ -9,7 +9,7 @@ const AnimatedCounter = ({ target, isVisible }: { target: number; isVisible: boo
   useEffect(() => {
     if (!isVisible) return;
     let startTime: number | null = null;
-    const duration = 2.0;
+    const duration = 0.8;
 
     const animate = (timestamp: number) => {
       if (startTime === null) startTime = timestamp;
@@ -35,7 +35,7 @@ export const StatisticsSection = () => {
   const maxPercentage = Math.max(...statisticsData.map((s) => s.percentage));
 
   return (
-    <section id="statistics" className="section-dark section-padding">
+    <section id="statistics" className="section-dark" style={{ paddingTop: '5rem', paddingBottom: '1rem' }}>
       <div className="section-container">
         {/* Section Header */}
         <motion.div
@@ -73,8 +73,8 @@ export const StatisticsSection = () => {
                 <div
                   className="stat-bar flex flex-col justify-start"
                   style={{
-                    height: `clamp(12rem, ${heightPercent * 0.35}vw, ${heightPercent * 5.5}px)`,
-                    minHeight: `${heightPercent * 4}px`,
+                    height: `clamp(8rem, ${heightPercent * 0.25}vw, ${heightPercent * 3.5}px)`,
+                    minHeight: `${heightPercent * 2.8}px`,
                   }}
                 >
                   <span className="text-3xl md:text-5xl lg:text-6xl font-black text-site-black/80">

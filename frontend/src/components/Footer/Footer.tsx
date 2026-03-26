@@ -133,10 +133,11 @@ export const Footer = () => {
 
           <motion.p
             key={currentIndex}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="text-3xl md:text-5xl font-black text-[#7ed957]"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -50 }}
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
+            className="text-6xl md:text-7xl font-black text-[#7ed957]"
           >
             {plasticNames[currentIndex]}
           </motion.p>

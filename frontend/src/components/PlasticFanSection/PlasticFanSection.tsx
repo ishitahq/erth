@@ -2,14 +2,14 @@ import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import type { MotionValue } from 'framer-motion';
 
-const CARD_W = 330;
-const CARD_H = 468;
-const SHOW_W = 148;
+const CARD_W = 270;
+const CARD_H = 380;
+const SHOW_W = 120;
 const NUM_CARDS = 6;
 const BASE_LEFT = 72;
 const BUNDLE_CENTER = 520;
-const BUNDLE_START = 0.82;
-const BUNDLE_END = 0.95;
+const BUNDLE_START = 0.78;
+const BUNDLE_END = 0.88;
 
 interface PlasticData {
   arrival: number;
@@ -36,8 +36,8 @@ const plastics: PlasticData[] = [
     bg: '#f2efea',
     dark: false,
     rotate: -5,
-    scrollStart: 0.02,
-    scrollEnd: 0.13,
+    scrollStart: 0.12,
+    scrollEnd: 0.20,
   },
   {
     arrival: 1,
@@ -49,8 +49,8 @@ const plastics: PlasticData[] = [
     bg: '#1a1a1a',
     dark: true,
     rotate: 3,
-    scrollStart: 0.15,
-    scrollEnd: 0.26,
+    scrollStart: 0.22,
+    scrollEnd: 0.30,
   },
   {
     arrival: 2,
@@ -62,8 +62,8 @@ const plastics: PlasticData[] = [
     bg: '#1a4a2e',
     dark: true,
     rotate: -8,
-    scrollStart: 0.28,
-    scrollEnd: 0.39,
+    scrollStart: 0.32,
+    scrollEnd: 0.40,
   },
   {
     arrival: 3,
@@ -75,8 +75,8 @@ const plastics: PlasticData[] = [
     bg: '#f2efea',
     dark: false,
     rotate: 6,
-    scrollStart: 0.41,
-    scrollEnd: 0.52,
+    scrollStart: 0.42,
+    scrollEnd: 0.50,
   },
   {
     arrival: 4,
@@ -88,8 +88,8 @@ const plastics: PlasticData[] = [
     bg: '#1a1a1a',
     dark: true,
     rotate: -3,
-    scrollStart: 0.54,
-    scrollEnd: 0.65,
+    scrollStart: 0.52,
+    scrollEnd: 0.60,
   },
   {
     arrival: 5,
@@ -101,8 +101,8 @@ const plastics: PlasticData[] = [
     bg: '#1a4a2e',
     dark: true,
     rotate: 7,
-    scrollStart: 0.67,
-    scrollEnd: 0.78,
+    scrollStart: 0.62,
+    scrollEnd: 0.70,
   },
 ];
 
@@ -192,7 +192,7 @@ const FanCard = ({
       style={{
         position: 'absolute',
         left: finalLeft,
-        top: `calc(62% - ${CARD_H / 2}px)`,
+        top: `calc(65% - ${CARD_H / 2}px)`,
         width: CARD_W,
         height: CARD_H,
         x,
@@ -229,8 +229,8 @@ const FanCard = ({
       {/* Main name */}
       <p
         style={{
-          marginTop: 8,
-          fontSize: 74,
+          marginTop: 6,
+          fontSize: 56,
           fontWeight: 900,
           lineHeight: 1,
           letterSpacing: '-0.03em',
@@ -243,8 +243,8 @@ const FanCard = ({
       {/* Full name */}
       <p
         style={{
-          marginTop: 12,
-          fontSize: 15,
+          marginTop: 8,
+          fontSize: 13,
           fontWeight: 800,
           lineHeight: 1.35,
           color: textLight,
@@ -257,9 +257,9 @@ const FanCard = ({
       {/* Info */}
       <p
         style={{
-          marginTop: 10,
-          fontSize: 14,
-          lineHeight: 1.65,
+          marginTop: 8,
+          fontSize: 12,
+          lineHeight: 1.55,
           color: textMuted,
           flex: 1,
         }}
@@ -296,16 +296,19 @@ export const PlasticFanSection = () => {
 
   return (
     <section
+      id="plastic-types"
       ref={containerRef}
-      style={{ height: '500vh', position: 'relative' }}
+      style={{ height: '400vh', position: 'relative' }}
     >
-      <div
+      <motion.div
         style={{
           position: 'sticky',
           top: 0,
           height: '100vh',
           overflow: 'hidden',
           backgroundColor: '#ede9e0',
+          scale: useTransform(scrollYProgress, [0, 0.10], [0.95, 1]),
+          borderRadius: useTransform(scrollYProgress, [0, 0.10], [24, 0]),
         }}
       >
         {/* Heading block — top-left */}
@@ -342,40 +345,7 @@ export const PlasticFanSection = () => {
             Our AI reads<br />
             every plastic type.
           </p>
-          <p
-            style={{
-              marginTop: 14,
-              fontSize: 15,
-              lineHeight: 1.6,
-              color: 'rgba(0,0,0,0.48)',
-              maxWidth: 400,
-              fontWeight: 500,
-            }}
-          >
-            From clear PET bottles to rigid PVC pipes —<br />
-            trained on all 6 resin codes.
-          </p>
         </div>
-
-        {/* Scroll hint */}
-        <motion.p
-          style={{
-            position: 'absolute',
-            bottom: 32,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-            color: 'rgba(0,0,0,0.28)',
-            whiteSpace: 'nowrap',
-            zIndex: 100,
-            opacity: useTransform(scrollYProgress, [0, 0.05], [1, 0]),
-          }}
-        >
-          Scroll to reveal ↓
-        </motion.p>
 
         {/* Right-side stat text — fades in after last card arrives */}
         <motion.div
@@ -385,8 +355,8 @@ export const PlasticFanSection = () => {
             top: '50%',
             width: 248,
             zIndex: 100,
-            opacity: useTransform(scrollYProgress, [0.76, 0.84], [0, 1]),
-            y: useTransform(scrollYProgress, [0.76, 0.84], [30, 0]),
+            opacity: useTransform(scrollYProgress, [BUNDLE_END, BUNDLE_END + 0.05], [0, 1]),
+            y: useTransform(scrollYProgress, [BUNDLE_END, BUNDLE_END + 0.05], [30, 0]),
             translateY: '-50%',
           }}
         >
@@ -490,7 +460,7 @@ export const PlasticFanSection = () => {
         {plastics.map((p) => (
           <FanCard key={p.id} plastic={p} scrollYProgress={scrollYProgress} />
         ))}
-      </div>
+      </motion.div>
     </section>
   );
 };
