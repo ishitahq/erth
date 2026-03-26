@@ -1,8 +1,6 @@
 /**
  * API client for the Plastic Waste Classification backend.
- * Calls POST /classify on the FastAPI server.
- *
- * If the backend is unreachable, returns a structured error.
+ * Calls POST /classify (single item) or POST /detect (conveyor belt).
  */
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -41,7 +39,38 @@ export interface ClassificationResult {
   tta_used: boolean;
 }
 
-// ── API call ─────────────────────────────────────────────────────────────────
+// ── Detection types ───────────────────────────────────────────────────────────
+
+export interface DetectedObject {
+  object_id: number;
+  bbox: [number, number, number, number]; // [x1, y1, x2, y2]
+  detection_confidence: number;
+  plastic_type: string;
+  type_confidence: number;
+  all_class_scores: Record<string, number> | null;
+  grade: string | null;
+  grade_confidence: number | null;
+  grade_scores: GradeScores | null;
+  action: string | null;
+  volume_cm3: number | null;
+  dimensions: Dimensions | null;
+}
+
+export interface DetectionSummary {
+  total_objects: number;
+  type_counts: Record<string, number>;  // e.g. { PP: 3, HDPE: 1, ... }
+  grade_counts: Record<string, number>;
+  total_volume_cm3: number | null;
+}
+
+export interface DetectionResult {
+  objects: DetectedObject[];
+  summary: DetectionSummary;
+  annotated_image_b64: string;           // base64 JPEG with bounding boxes
+  detection_method: string;              // 'yolo' | 'opencv' | 'full_image_fallback'
+}
+
+// ── API calls ─────────────────────────────────────────────────────────────────
 
 export async function classifyImage(file: File): Promise<ClassificationResult> {
   const formData = new FormData();
@@ -64,6 +93,32 @@ export async function classifyImage(file: File): Promise<ClassificationResult> {
     let detail = '';
     try { detail = await res.text(); } catch { /* ignore */ }
     throw new Error(`Classification failed (${res.status}): ${detail || 'Unknown server error'}`);
+  }
+
+  return res.json();
+}
+
+export async function detectImage(file: File): Promise<DetectionResult> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/detect`, {
+      method: 'POST',
+      body: formData,
+    });
+  } catch {
+    throw new Error(
+      'Cannot connect to the backend server. Make sure uvicorn is running:\n' +
+      'cd backend && python -m uvicorn app.main:app --port 8000'
+    );
+  }
+
+  if (!res.ok) {
+    let detail = '';
+    try { detail = await res.text(); } catch { /* ignore */ }
+    throw new Error(`Detection failed (${res.status}): ${detail || 'Unknown server error'}`);
   }
 
   return res.json();

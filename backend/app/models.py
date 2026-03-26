@@ -24,6 +24,7 @@ from .config import (
     DEPTH_ENCODER,
     DEPTH_MAX_DEPTH,
     DEPTH_MODEL_CONFIGS,
+    DEPTH_REPO_PATH,
     EFFICIENTNET_CHECKPOINT,
     GRADE_DESCRIPTIONS,
     NUM_CLASSES,
@@ -215,12 +216,19 @@ def load_depth_model() -> Optional[Any]:
         )
         return None
 
+    # Ensure the cloned repo is on sys.path before importing
+    import sys
+    depth_repo_str = str(DEPTH_REPO_PATH)
+    if depth_repo_str not in sys.path:
+        sys.path.insert(0, depth_repo_str)
+
     try:
         from depth_anything_v2.dpt import DepthAnythingV2
     except ImportError:
         logger.warning(
             "depth_anything_v2 not installed. Volumetric estimation unavailable. "
-            "See: https://github.com/DepthAnything/Depth-Anything-V2"
+            "Clone the repo: git clone https://github.com/DepthAnything/Depth-Anything-V2 "
+            "into backend/ and run: pip install -r Depth-Anything-V2/metric_depth/requirements.txt"
         )
         return None
 

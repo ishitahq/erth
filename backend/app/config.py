@@ -26,8 +26,11 @@ CLIP_DOWNLOAD_URL = (
     "40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt"
 )
 
-# Depth Anything V2 checkpoint (optional — drop into models/)
-DEPTH_CHECKPOINT = MODELS_DIR / "depth_anything_v2_metric_indoor_vitl.pth"
+# Depth Anything V2 checkpoint — lives in backend/checkpoints/ (not models/)
+DEPTH_CHECKPOINT = BASE_DIR / "checkpoints" / "depth_anything_v2_metric_indoor_vitl.pth"
+
+# Path to the cloned Depth-Anything-V2 repo (metric_depth sub-dir)
+DEPTH_REPO_PATH = BASE_DIR / "Depth-Anything-V2" / "metric_depth"
 
 # ── Classification Constants ─────────────────────────────────────────────────
 # ImageFolder sorts class names alphabetically — indices 0-5
@@ -60,6 +63,10 @@ GRADE_ACTIONS = {
 # ── Volumetric Estimation Constants (Step 9) ─────────────────────────────────
 CAMERA_FOV_DEGREES = 60        # Standard industrial camera assumption
 PLASTIC_THICKNESS_CM = 2.0    # Average plastic item thickness for volume proxy
+
+# Foreground detection: pixels in the closest N% of depth values = the plastic item.
+# Background pixels are excluded from width/height/depth calculations.
+DEPTH_FG_PERCENTILE = 30      # lower 30% of depth = foreground object
 
 # ── Depth Anything V2 Model Config ───────────────────────────────────────────
 DEPTH_MODEL_CONFIGS = {

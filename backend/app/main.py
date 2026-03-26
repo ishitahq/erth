@@ -3,7 +3,8 @@ FastAPI application — Plastic Waste Classification API.
 
 Endpoints:
   GET  /health    → model availability + device info
-  POST /classify  → upload image, returns full hierarchical classification
+  POST /classify  → single-item: upload image, returns hierarchical classification
+  POST /detect    → conveyor belt: detect all plastic items, classify each one
 """
 
 import logging
@@ -13,9 +14,9 @@ from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 
-from .inference import run_full_pipeline
+from .inference import detect_and_classify, run_full_pipeline
 from .models import DEVICE, load_clip, load_depth_model, load_efficientnet, load_onnx_session
-from .schemas import ClassificationResult, HealthResponse, ModelStatus
+from .schemas import ClassificationResult, DetectionResult, HealthResponse, ModelStatus
 
 logging.basicConfig(
     level=logging.INFO,
@@ -31,9 +32,10 @@ app = FastAPI(
         "Hierarchical plastic waste classification pipeline:\\n"
         "- **Stage 1** — EfficientNet-B3 (PyTorch or ONNX): plastic type\\n"
         "- **Stage 2** — CLIP ViT-B/32 zero-shot: recyclability grade (A/B/C)\\n"
-        "- **Stage 3** — Depth Anything V2: volumetric estimation (cm³)"
+        "- **Stage 3** — Depth Anything V2: volumetric estimation (cm³)\\n"
+        "- **/detect** — conveyor belt mode: detects multiple objects, classifies each"
     ),
-    version="1.1.0",
+    version="1.2.0",
 )
 
 # ── CORS (for React frontend on Vite / CRA dev server) ───────────────────────
@@ -119,6 +121,52 @@ async def classify_image(
     # Run the full 3-stage pipeline
     try:
         result = run_full_pipeline(image, use_tta=use_tta, prefer_onnx=use_onnx)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+
+    return result
+
+
+# ── Detect ───────────────────────────────────────────────────────────────────
+
+@app.post("/detect", response_model=DetectionResult)
+async def detect_image(
+    file: UploadFile = File(..., description="Conveyor belt image (JPEG / PNG / WEBP)"),
+    use_onnx: bool = Query(
+        True,
+        description="Prefer ONNX runtime for Stage 1 (faster on CPU).",
+    ),
+):
+    """
+    Detect and classify **all** plastic items in a conveyor belt image.
+
+    Returns for each detected object:
+    - **bbox**: [x1, y1, x2, y2] bounding box in pixels
+    - **plastic_type**: PET | HDPE | LDPE | PP | PS | OTHER | Unknown
+    - **type_confidence**: EfficientNet softmax max probability
+    - **grade**: A / B / C recyclability grade (CLIP)
+    - **action**: recommended recycling action
+    - **volume_cm3**: per-object volume estimate
+
+    Also returns:
+    - **summary**: total counts per type and grade, total volume
+    - **annotated_image_b64**: base64 JPEG with colour-coded bounding boxes
+    - **detection_method**: 'yolo' | 'opencv' | 'full_image_fallback'
+    """
+    if file.content_type and not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Expected an image file, got {file.content_type!r}",
+        )
+
+    try:
+        contents = await file.read()
+        image = Image.open(BytesIO(contents)).convert("RGB")
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Could not decode image: {exc}")
+
+    try:
+        result = detect_and_classify(image, prefer_onnx=use_onnx)
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc))
 

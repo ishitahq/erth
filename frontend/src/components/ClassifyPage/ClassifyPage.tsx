@@ -2,13 +2,11 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
-  classifyImage,
+  detectImage,
   CLASS_COLORS,
   GRADE_COLORS,
-  GRADE_LABELS,
-  RECYCLING_TIPS,
 } from '../../utils/mockInference';
-import type { ClassificationResult } from '../../utils/mockInference';
+import type { DetectionResult } from '../../utils/mockInference';
 
 type Stage = 'upload' | 'scanning' | 'results' | 'error';
 type InputMode = 'upload' | 'webcam';
@@ -22,7 +20,7 @@ const ClassifyPage = () => {
   const [stage, setStage] = useState<Stage>('upload');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string>('');
-  const [result, setResult] = useState<ClassificationResult | null>(null);
+  const [detectResult, setDetectResult] = useState<DetectionResult | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>('upload');
@@ -137,9 +135,9 @@ const ClassifyPage = () => {
     setErrorMsg('');
     const t0 = performance.now();
     try {
-      const res = await classifyImage(imageFile);
+      const res = await detectImage(imageFile);
       setInferenceTime(Math.round(performance.now() - t0));
-      setResult(res);
+      setDetectResult(res);
       setStage('results');
     } catch (err: unknown) {
       setInferenceTime(0);
@@ -152,7 +150,7 @@ const ClassifyPage = () => {
     setStage('upload');
     setImageFile(null);
     setImageUrl('');
-    setResult(null);
+    setDetectResult(null);
     setErrorMsg('');
   };
 
@@ -162,16 +160,11 @@ const ClassifyPage = () => {
     setInputMode(mode);
   };
 
-  // Sorted class scores
-  const sortedScores = result?.all_class_scores
-    ? Object.entries(result.all_class_scores).sort((a, b) => b[1] - a[1])
-    : [];
-
   return (
     <div className="min-h-screen bg-site-black text-site-text-light">
       {/* Top bar */}
       <div className="w-full bg-site-dark text-site-text-light text-center py-2 text-xs md:text-sm tracking-widest uppercase font-medium">
-        🔬 AI Plastic Waste Classification Engine
+        🏭 Conveyor Belt Plastic Detection Engine
       </div>
 
       {/* Toggle navbar */}
@@ -209,12 +202,12 @@ const ClassifyPage = () => {
         >
           <p className="text-[#7ed957] text-xs md:text-sm uppercase tracking-[0.3em] mb-4 font-bold">Core Feature</p>
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight mb-4 leading-tight">
-            Classify Your{' '}
-            <span className="bg-gradient-to-r from-[#7ed957] to-[#5cb83f] bg-clip-text text-transparent">Plastic</span>
+            Detect Your{' '}
+            <span className="bg-gradient-to-r from-[#7ed957] to-[#5cb83f] bg-clip-text text-transparent">Plastics</span>
           </h1>
           <p className="text-sm md:text-base text-site-text-muted max-w-xl mx-auto leading-relaxed">
-            Upload an image or use your webcam. Our 3-stage AI pipeline identifies type,
-            assigns a recyclability grade, and estimates volume.
+            Upload a conveyor belt image. Our AI detects every plastic item, classifies its type,
+            assigns a recyclability grade, and estimates volume per object.
           </p>
         </motion.div>
       </section>
@@ -340,7 +333,10 @@ const ClassifyPage = () => {
                   <div className="p-4 flex gap-3 border-t border-gray-700/50">
                     {stage === 'upload' && (
                       <>
-                        <button onClick={handleAnalyze} className="flex-1 py-3 rounded-xl font-bold text-sm bg-[#7ed957] text-black hover:bg-[#5cb83f] transition-all hover:scale-[1.02] active:scale-[0.98]">🔍 Analyze Image</button>
+                        <button onClick={handleAnalyze}
+                          className="flex-1 py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.02] active:scale-[0.98] bg-[#7ed957] text-black hover:bg-[#5cb83f]">
+                          🏭 Detect Objects
+                        </button>
                         <button onClick={handleReset} className="px-4 py-3 rounded-xl font-bold text-sm bg-white/10 text-white hover:bg-white/20 transition-all">✕</button>
                       </>
                     )}
@@ -348,7 +344,7 @@ const ClassifyPage = () => {
                       <div className="flex-1 py-3 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <div className="w-2 h-2 rounded-full bg-[#7ed957] animate-pulse" />
-                          <span className="text-sm text-site-text-muted font-medium">Running 3-stage pipeline...</span>
+                          <span className="text-sm text-site-text-muted font-medium">Detecting objects...</span>
                         </div>
                       </div>
                     )}
@@ -373,19 +369,24 @@ const ClassifyPage = () => {
                 <div className="flex items-center gap-3 mb-4">
                   <div className={`w-3 h-3 rounded-full ${stage === 'results' ? 'bg-[#7ed957]' : stage === 'scanning' ? 'bg-yellow-400 animate-pulse' : stage === 'error' ? 'bg-red-500' : 'bg-gray-500'}`} />
                   <p className="text-xs font-bold tracking-widest uppercase text-site-text-muted">
-                    {stage === 'upload' ? 'Awaiting Image' : stage === 'scanning' ? 'Running Pipeline' : stage === 'error' ? 'Error' : 'Classification Complete'}
+                    {stage === 'upload' ? 'Awaiting Image' : stage === 'scanning' ? 'Detecting Objects' : stage === 'error' ? 'Error' : 'Detection Complete'}
                   </p>
                 </div>
                 {stage === 'upload' && !imageUrl && (
-                  <p className="text-sm text-site-text-muted leading-relaxed">Upload an image or capture one from your webcam. The 3-stage pipeline will classify type, assign a recyclability grade, and estimate volume.</p>
+                  <p className="text-sm text-site-text-muted leading-relaxed">Upload a conveyor belt image or capture one from your webcam. AI will detect every plastic item, classify its type, grade it, and estimate its volume.</p>
                 )}
                 {stage === 'upload' && imageUrl && (
-                  <p className="text-sm text-site-text-muted leading-relaxed">Image loaded. Click <span className="text-[#7ed957] font-semibold">Analyze Image</span> to run the full pipeline.</p>
+                  <p className="text-sm text-site-text-muted leading-relaxed">Image loaded. Click <span className="text-[#7ed957] font-semibold">Detect Objects</span> to run the full detection pipeline.</p>
                 )}
                 {stage === 'scanning' && (
                   <div className="space-y-3">
-                    {['Stage 1: EfficientNet-B3 type classification...', 'Stage 2: CLIP recyclability grading...', 'Stage 3: Depth Anything V2 volumetric estimation...'].map((step, i) => (
-                      <motion.div key={step} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.6 }} className="flex items-center gap-2">
+                    {[
+                      'Detecting plastic objects (OpenCV / YOLO)...',
+                      'Stage 1: Classifying each detected item...',
+                      'Stage 2: CLIP grade per object...',
+                      'Stage 3: Volume estimation per object...',
+                    ].map((step, i) => (
+                      <motion.div key={step} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.5 }} className="flex items-center gap-2">
                         <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} className="w-3 h-3 border-2 border-[#7ed957] border-t-transparent rounded-full" />
                         <span className="text-xs text-site-text-muted">{step}</span>
                       </motion.div>
@@ -397,160 +398,158 @@ const ClassifyPage = () => {
                 )}
               </div>
 
-              {/* ── STAGE 1: Type Classification ── */}
+              {/* ── CONVEYOR MODE RESULTS ── */}
               <AnimatePresence>
-                {stage === 'results' && result && (
+                {stage === 'results' && detectResult && (
                   <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-4">
 
-                    {/* Type result card */}
+                    {/* Annotated image */}
+                    {detectResult.annotated_image_b64 && (
+                      <div className="bg-white/[0.03] border border-gray-700/50 rounded-2xl overflow-hidden">
+                        <p className="text-xs font-bold tracking-widest uppercase text-site-text-muted px-5 pt-5 pb-3">Annotated Output</p>
+                        <img
+                          src={`data:image/jpeg;base64,${detectResult.annotated_image_b64}`}
+                          alt="Annotated detections"
+                          className="w-full h-auto object-contain max-h-[420px] bg-black/50"
+                        />
+                      </div>
+                    )}
+
+                    {/* Summary card */}
                     <div className="bg-white/[0.03] border border-gray-700/50 rounded-2xl p-5">
-                      <p className="text-xs font-bold tracking-widest uppercase text-site-text-muted mb-4">Stage 1 — Plastic Type</p>
-                      <div className="flex items-center gap-4 mb-5">
-                        <div className="w-14 h-14 rounded-xl flex items-center justify-center text-lg font-black text-white"
-                          style={{ backgroundColor: CLASS_COLORS[result.plastic_type] || '#6b7280' }}>
-                          {result.plastic_type === 'Unknown' ? '?' : result.plastic_type}
+                      <p className="text-xs font-bold tracking-widest uppercase text-site-text-muted mb-4">
+                        Detection Summary — {detectResult.summary.total_objects} Object{detectResult.summary.total_objects !== 1 ? 's' : ''} Found
+                      </p>
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        {/* Type breakdown */}
+                        <div className="bg-white/[0.05] rounded-xl p-3">
+                          <p className="text-[10px] text-site-text-muted/60 uppercase tracking-wider font-bold mb-2">By Type</p>
+                          <div className="space-y-1">
+                            {Object.entries(detectResult.summary.type_counts).sort((a, b) => b[1] - a[1]).map(([type, count]) => (
+                              <div key={type} className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: CLASS_COLORS[type] || '#6b7280' }} />
+                                  <span className="text-xs font-bold text-white">{type}</span>
+                                </div>
+                                <span className="text-xs font-mono text-site-text-muted">×{count}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-2xl font-black text-white">{result.plastic_type}</p>
-                          <p className="text-sm text-site-text-muted">
-                            {(result.type_confidence * 100).toFixed(1)}% confidence
-                          </p>
+                        {/* Grade breakdown */}
+                        <div className="bg-white/[0.05] rounded-xl p-3">
+                          <p className="text-[10px] text-site-text-muted/60 uppercase tracking-wider font-bold mb-2">By Grade</p>
+                          <div className="space-y-1">
+                            {Object.entries(detectResult.summary.grade_counts).sort().map(([grade, count]) => (
+                              <div key={grade} className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: GRADE_COLORS[grade] || '#6b7280' }} />
+                                  <span className="text-xs font-bold text-white">Grade {grade}</span>
+                                </div>
+                                <span className="text-xs font-mono text-site-text-muted">×{count}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
-
-                      {/* Class scores bar chart */}
-                      <div className="space-y-2">
-                        {sortedScores.map(([cls, score], i) => (
-                          <motion.div key={cls} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs font-bold text-site-text-muted">{cls}</span>
-                              <span className="text-xs font-mono text-site-text-muted">{(score * 100).toFixed(1)}%</span>
-                            </div>
-                            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${score * 100}%` }}
-                                transition={{ duration: 0.6, delay: 0.2 + i * 0.08, ease: 'easeOut' }}
-                                className="h-full rounded-full"
-                                style={{ backgroundColor: CLASS_COLORS[cls] || '#6b7280' }}
-                              />
-                            </div>
-                          </motion.div>
-                        ))}
-                      </div>
-
-                      {/* Recycling tip */}
-                      <div className="mt-4 p-3 bg-white/[0.03] rounded-lg border border-gray-700/30">
-                        <p className="text-xs text-site-text-muted/80 leading-relaxed">
-                          💡 {RECYCLING_TIPS[result.plastic_type] || 'Check local recycling guidelines.'}
-                        </p>
+                      {detectResult.summary.total_volume_cm3 != null && (
+                        <div className="flex items-center justify-between p-3 bg-white/[0.05] rounded-xl">
+                          <span className="text-xs font-bold text-site-text-muted uppercase tracking-wider">Total Volume</span>
+                          <span className="text-xl font-black text-[#7ed957]">{detectResult.summary.total_volume_cm3} cm³</span>
+                        </div>
+                      )}
+                      <div className="mt-2 text-right">
+                        <span className="text-[10px] text-site-text-muted/50 uppercase tracking-wider">
+                          Detector: {detectResult.detection_method}
+                        </span>
                       </div>
                     </div>
 
-                    {/* ── STAGE 2: Recyclability Grade ── */}
-                    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}
-                      className="bg-white/[0.03] border border-gray-700/50 rounded-2xl p-5">
-                      <p className="text-xs font-bold tracking-widest uppercase text-site-text-muted mb-4">Stage 2 — Recyclability Grade</p>
-                      {result.grade ? (
-                        <>
-                          <div className="flex items-center gap-4 mb-4">
-                            <div className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl font-black text-white"
-                              style={{ backgroundColor: GRADE_COLORS[result.grade] || '#6b7280' }}>
-                              {result.grade}
+                    {/* Per-object cards */}
+                    <div className="space-y-3">
+                      <p className="text-xs font-bold tracking-widest uppercase text-site-text-muted">Per-Object Analysis</p>
+                      {detectResult.objects.map((obj) => (
+                        <motion.div
+                          key={obj.object_id}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: obj.object_id * 0.06 }}
+                          className="bg-white/[0.03] border border-gray-700/50 rounded-xl p-4"
+                        >
+                          <div className="flex items-start gap-3">
+                            {/* ID badge */}
+                            <div
+                              className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-black text-white shrink-0"
+                              style={{ backgroundColor: CLASS_COLORS[obj.plastic_type] || '#6b7280' }}
+                            >
+                              #{obj.object_id}
                             </div>
-                            <div>
-                              <p className="text-xl font-black text-white">{GRADE_LABELS[result.grade] || result.grade}</p>
-                              <p className="text-sm text-site-text-muted">{(result.grade_confidence! * 100).toFixed(1)}% confidence</p>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-black text-white">{obj.plastic_type}</span>
+                                <span className="text-xs text-site-text-muted">
+                                  {(obj.type_confidence * 100).toFixed(0)}% conf
+                                </span>
+                                {obj.grade && (
+                                  <span
+                                    className="text-xs font-bold px-2 py-0.5 rounded-full text-black"
+                                    style={{ backgroundColor: GRADE_COLORS[obj.grade] || '#6b7280' }}
+                                  >
+                                    Grade {obj.grade}
+                                  </span>
+                                )}
+                                {obj.volume_cm3 != null && (
+                                  <span className="text-xs text-[#7ed957] font-mono">{obj.volume_cm3} cm³</span>
+                                )}
+                              </div>
+                              {obj.action && (
+                                <p className="text-xs text-site-text-muted/70 mt-1">{obj.action}</p>
+                              )}
+                              {/* Mini score bars */}
+                              {obj.all_class_scores && (
+                                <div className="mt-2 grid grid-cols-3 gap-1">
+                                  {Object.entries(obj.all_class_scores)
+                                    .sort((a, b) => b[1] - a[1])
+                                    .slice(0, 3)
+                                    .map(([cls, score]) => (
+                                      <div key={cls} className="text-center">
+                                        <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                                          <div
+                                            className="h-full rounded-full"
+                                            style={{
+                                              width: `${score * 100}%`,
+                                              backgroundColor: CLASS_COLORS[cls] || '#666',
+                                            }}
+                                          />
+                                        </div>
+                                        <p className="text-[9px] text-site-text-muted/50 mt-0.5">{cls} {(score * 100).toFixed(0)}%</p>
+                                      </div>
+                                    ))}
+                                </div>
+                              )}
                             </div>
                           </div>
-                          {/* Grade scores */}
-                          {result.grade_scores && (
-                            <div className="flex gap-2 mb-4">
-                              {(['A', 'B', 'C'] as const).map((g) => {
-                                const score = result.grade_scores?.[g];
-                                const isActive = g === result.grade;
-                                return (
-                                  <div key={g} className={`flex-1 rounded-lg p-2.5 text-center border transition-all ${isActive ? 'border-white/30 bg-white/[0.08]' : 'border-transparent bg-white/[0.03]'}`}>
-                                    <p className="text-lg font-black" style={{ color: GRADE_COLORS[g] }}>{score != null ? `${(score * 100).toFixed(0)}%` : '—'}</p>
-                                    <p className="text-[10px] text-site-text-muted/60 uppercase tracking-wider font-medium mt-0.5">Grade {g}</p>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                          {result.action && (
-                            <div className="p-3 bg-white/[0.03] rounded-lg border border-gray-700/30">
-                              <p className="text-xs font-bold text-[#7ed957] mb-1">Recommended Action</p>
-                              <p className="text-sm text-site-text-muted">{result.action}</p>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <p className="text-sm text-site-text-muted/60 italic">Unavailable — CLIP model not loaded</p>
-                      )}
-                    </motion.div>
-
-                    {/* ── STAGE 3: Volumetric Estimation ── */}
-                    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.4 }}
-                      className="bg-white/[0.03] border border-gray-700/50 rounded-2xl p-5">
-                      <p className="text-xs font-bold tracking-widest uppercase text-site-text-muted mb-4">Stage 3 — Volumetric Estimation</p>
-                      {result.volume_cm3 != null ? (
-                        <div className="grid grid-cols-3 gap-3">
-                          <div className="bg-white/[0.05] rounded-xl p-4 text-center">
-                            <p className="text-2xl font-black text-[#7ed957]">{result.volume_cm3}</p>
-                            <p className="text-[10px] text-site-text-muted/60 uppercase tracking-wider font-medium mt-1">Volume (cm³)</p>
-                          </div>
-                          <div className="bg-white/[0.05] rounded-xl p-4 text-center">
-                            <p className="text-2xl font-black text-white">{result.dimensions?.width_cm ?? '—'}</p>
-                            <p className="text-[10px] text-site-text-muted/60 uppercase tracking-wider font-medium mt-1">Width (cm)</p>
-                          </div>
-                          <div className="bg-white/[0.05] rounded-xl p-4 text-center">
-                            <p className="text-2xl font-black text-white">{result.dimensions?.height_cm ?? '—'}</p>
-                            <p className="text-[10px] text-site-text-muted/60 uppercase tracking-wider font-medium mt-1">Height (cm)</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-site-text-muted/60 italic">Unavailable — Depth model not loaded</p>
-                      )}
-                    </motion.div>
-
-                    {/* Meta bar */}
-                    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.5 }}
-                      className="bg-white/[0.03] border border-gray-700/50 rounded-2xl p-4">
-                      <div className="flex flex-wrap gap-4 justify-between items-center text-xs text-site-text-muted">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold uppercase tracking-wider">Backend:</span>
-                          <span className="px-2 py-0.5 rounded bg-white/10 font-mono">{result.backend_used.toUpperCase()}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold uppercase tracking-wider">TTA:</span>
-                          <span className={`px-2 py-0.5 rounded ${result.tta_used ? 'bg-[#7ed957]/20 text-[#7ed957]' : 'bg-white/10'}`}>
-                            {result.tta_used ? 'ON (8 views)' : 'OFF'}
-                          </span>
-                        </div>
-                        {inferenceTime > 0 && (
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold uppercase tracking-wider">Time:</span>
-                            <span className="px-2 py-0.5 rounded bg-white/10 font-mono">{inferenceTime}ms</span>
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
+                        </motion.div>
+                      ))}
+                    </div>
 
                   </motion.div>
                 )}
               </AnimatePresence>
 
+
+
               {/* Pipeline info card (visible when no results) */}
               {stage !== 'results' && (
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.6 }}
                   className="bg-white/[0.03] border border-gray-700/50 rounded-2xl p-5">
-                  <p className="text-xs font-bold tracking-widest uppercase text-site-text-muted mb-3">3-Stage Pipeline</p>
+                  <p className="text-xs font-bold tracking-widest uppercase text-site-text-muted mb-3">Detection Pipeline</p>
                   <div className="space-y-3">
                     {[
-                      { num: '1', title: 'Type Classification', desc: 'EfficientNet-B3 — identifies HDPE, LDPE, PET, PP, PS, or Other', color: '#7ed957' },
-                      { num: '2', title: 'Recyclability Grade', desc: 'CLIP ViT-B/32 zero-shot — assigns Grade A, B, or C', color: '#f59e0b' },
-                      { num: '3', title: 'Volumetric Estimation', desc: 'Depth Anything V2 — estimates volume in cm³', color: '#52a8db' },
+                      { num: '🎯', title: 'Object Detection', desc: 'OpenCV / YOLO — locates every plastic item with bounding boxes', color: '#7ed957' },
+                      { num: '1', title: 'Type Classification', desc: 'EfficientNet-B3 — identifies HDPE, LDPE, PET, PP, PS, or Other per item', color: '#7ed957' },
+                      { num: '2', title: 'Recyclability Grade', desc: 'CLIP ViT-B/32 zero-shot — Grade A / B / C per item', color: '#f59e0b' },
+                      { num: '3', title: 'Volumetric Estimation', desc: 'Depth Anything V2 — estimates volume in cm³ per item', color: '#a78bfa' },
                     ].map((s) => (
                       <div key={s.num} className="flex items-start gap-3">
                         <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white shrink-0" style={{ backgroundColor: s.color }}>

@@ -2,7 +2,7 @@
 Pydantic response schemas for the classification API.
 """
 
-from typing import Optional
+from typing import Dict, List, Optional
 from pydantic import BaseModel
 
 
@@ -55,3 +55,37 @@ class HealthResponse(BaseModel):
     status: str = "ok"
     device: str = "cpu"
     models: ModelStatus = ModelStatus()
+
+
+# ── Detection schemas ─────────────────────────────────────────────────────────
+
+class DetectedObject(BaseModel):
+    """Single plastic item detected on a conveyor belt."""
+    object_id: int
+    bbox: List[int]                        # [x1, y1, x2, y2] pixels
+    detection_confidence: float            # detector confidence (0‒1)
+    plastic_type: str                      # EfficientNet prediction
+    type_confidence: float                 # EfficientNet softmax probability
+    all_class_scores: Optional[Dict[str, float]] = None
+    grade: Optional[str] = None            # A / B / C from CLIP
+    grade_confidence: Optional[float] = None
+    grade_scores: Optional[GradeScores] = None
+    action: Optional[str] = None
+    volume_cm3: Optional[float] = None     # Depth Anything volume estimate
+    dimensions: Optional[Dimensions] = None
+
+
+class DetectionSummary(BaseModel):
+    """Aggregate statistics across all detected objects."""
+    total_objects: int
+    type_counts: Dict[str, int]  # e.g. {"PP": 3, "HDPE": 1}
+    grade_counts: Dict[str, int]
+    total_volume_cm3: Optional[float] = None
+
+
+class DetectionResult(BaseModel):
+    """Full conveyor-belt detection + classification result."""
+    objects: List[DetectedObject]
+    summary: DetectionSummary
+    annotated_image_b64: str               # base64 JPEG with drawn bounding boxes
+    detection_method: str                  # 'yolo' or 'opencv'

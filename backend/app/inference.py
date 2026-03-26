@@ -5,11 +5,17 @@ Three stages:
   Stage 1: Type classification   — EfficientNet-B3 (PyTorch or ONNX)
   Stage 2: Grade classification  — CLIP zero-shot (A / B / C)
   Stage 3: Volumetric estimation — Depth Anything V2 metric depth
+
+Extended detection pipeline:
+  detect_and_classify() — detect multiple objects in a conveyor belt image,
+  then run all three stages on each detected crop.
 """
 
+import base64
+import io
 import math
 import logging
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -20,6 +26,7 @@ from .config import (
     CAMERA_FOV_DEGREES,
     CLASS_NAMES,
     CONFIDENCE_THRESHOLD,
+    DEPTH_FG_PERCENTILE,
     GRADE_ACTIONS,
     GRADE_LABELS,
     IMG_MEAN,
@@ -29,7 +36,7 @@ from .config import (
     PLASTIC_THICKNESS_CM,
 )
 from .models import DEVICE, load_clip, load_depth_model, load_efficientnet, load_onnx_session
-from .schemas import ClassificationResult, Dimensions, GradeScores
+from .schemas import ClassificationResult, DetectedObject, DetectionResult, DetectionSummary, Dimensions, GradeScores
 
 logger = logging.getLogger(__name__)
 
@@ -251,12 +258,36 @@ def estimate_volume(image: Image.Image) -> Optional[Dict]:
     with torch.no_grad():
         depth_map = depth_model.infer_image(cv2_img)  # HxW numpy float32, meters
 
-    avg_depth_m = float(depth_map.mean())
-    fov_rad = math.radians(CAMERA_FOV_DEGREES)
-    px_to_m = (avg_depth_m * 2 * math.tan(fov_rad / 2)) / w
+    # ── Foreground detection ──────────────────────────────────────────────
+    # The plastic item is the closest object — pixels in the bottom N% of depth
+    # values form a mask of the foreground object.  We derive:
+    #   • obj_depth_m : mean depth of the object itself (not the whole scene)
+    #   • obj_w_px / obj_h_px : pixel extent of the object's bounding box
+    fg_threshold = float(np.percentile(depth_map, DEPTH_FG_PERCENTILE))
+    fg_mask = depth_map <= fg_threshold
 
-    real_w_cm = w * px_to_m * 100
-    real_h_cm = h * px_to_m * 100
+    fg_rows = np.where(fg_mask.any(axis=1))[0]
+    fg_cols = np.where(fg_mask.any(axis=0))[0]
+
+    if len(fg_rows) > 1 and len(fg_cols) > 1:
+        obj_h_px = float(fg_rows[-1] - fg_rows[0])
+        obj_w_px = float(fg_cols[-1] - fg_cols[0])
+        obj_depth_m = float(depth_map[fg_mask].mean())
+    else:
+        # Fallback: assume object fills centre 60 % of frame
+        obj_w_px = w * 0.6
+        obj_h_px = h * 0.6
+        obj_depth_m = float(np.percentile(depth_map, 20))
+
+    # Guard against zero/tiny depth (sensor noise, very close objects)
+    obj_depth_m = max(obj_depth_m, 0.05)
+
+    # ── Pinhole camera → real dimensions ────────────────────────────────
+    fov_rad = math.radians(CAMERA_FOV_DEGREES)
+    px_to_m = (obj_depth_m * 2 * math.tan(fov_rad / 2)) / w
+
+    real_w_cm = obj_w_px * px_to_m * 100
+    real_h_cm = obj_h_px * px_to_m * 100
     volume_cm3 = real_w_cm * real_h_cm * PLASTIC_THICKNESS_CM
 
     return {
@@ -315,3 +346,261 @@ def run_full_pipeline(
         )
 
     return result
+
+
+# ── Conveyor Detection Pipeline ───────────────────────────────────────────────
+
+# Colour palette for bounding box rendering (one colour per plastic type)
+_BOX_COLORS: Dict[str, Tuple[int, int, int]] = {
+    "PET":     (231, 76,  60),
+    "HDPE":    (82,  168, 219),
+    "LDPE":    (243, 156, 18),
+    "PP":      (126, 217, 87),
+    "PS":      (155, 89,  182),
+    "OTHER":   (149, 165, 166),
+    "Unknown": (107, 114, 128),
+}
+
+_GRADE_BADGE_COLORS: Dict[str, Tuple[int, int, int]] = {
+    "A": (126, 217, 87),
+    "B": (245, 158, 11),
+    "C": (239, 68,  68),
+}
+
+
+def _draw_detections(
+    image: Image.Image,
+    objects: List[Dict],
+) -> Image.Image:
+    """
+    Return a copy of *image* with colour-coded bounding boxes and labels.
+    Label format: "#<id> <TYPE> <type_conf>% | Grade <grade>"
+    """
+    from PIL import ImageDraw  # noqa: PLC0415
+
+    out = image.copy().convert("RGB")
+    draw = ImageDraw.Draw(out)
+
+    for obj in objects:
+        x1, y1, x2, y2 = obj["bbox"]
+        ptype = obj["plastic_type"]
+        color = _BOX_COLORS.get(ptype, (200, 200, 200))
+
+        # Box outline (3-pixel border)
+        for offset in range(3):
+            draw.rectangle(
+                [x1 - offset, y1 - offset, x2 + offset, y2 + offset],
+                outline=color,
+            )
+
+        # Label text
+        grade = obj.get("grade") or "?"
+        conf_pct = int(round(obj["type_confidence"] * 100))
+        label = f"#{obj['object_id']} {ptype} {conf_pct}% | {grade}"
+
+        label_len = len(label)
+        char_w, char_h = 7, 13
+        lx2 = min(out.width, x1 + label_len * char_w + 6)
+        ly1 = max(0, y1 - char_h - 4)
+
+        grade_color = _GRADE_BADGE_COLORS.get(grade, color)
+        draw.rectangle([x1, ly1, lx2, y1], fill=grade_color)
+        draw.text((x1 + 3, ly1 + 1), label, fill=(0, 0, 0))
+
+    return out
+
+
+def _volume_for_crop(
+    full_image: Image.Image,
+    x1: int, y1: int, x2: int, y2: int,
+) -> Optional[Dict]:
+    """
+    Estimate volume for a single detected crop.
+
+    Runs Depth Anything on the full frame then restricts the foreground mask
+    to the bounding-box region so the depth estimation is object-specific.
+    """
+    depth_model = load_depth_model()
+    if depth_model is None:
+        return None
+
+    try:
+        import cv2  # noqa: PLC0415
+    except ImportError:
+        return None
+
+    img_rgb = np.array(full_image.convert("RGB"))
+    crop_rgb = img_rgb[y1:y2, x1:x2]
+    if crop_rgb.size == 0:
+        return None
+    h_crop, w_crop = crop_rgb.shape[:2]
+
+    cv2_crop = cv2.cvtColor(crop_rgb, cv2.COLOR_RGB2BGR)
+
+    with torch.no_grad():
+        depth_map = depth_model.infer_image(cv2_crop)
+
+    fg_threshold = float(np.percentile(depth_map, DEPTH_FG_PERCENTILE))
+    fg_mask = depth_map <= fg_threshold
+
+    fg_rows = np.where(fg_mask.any(axis=1))[0]
+    fg_cols = np.where(fg_mask.any(axis=0))[0]
+
+    if len(fg_rows) > 1 and len(fg_cols) > 1:
+        obj_h_px = float(fg_rows[-1] - fg_rows[0])
+        obj_w_px = float(fg_cols[-1] - fg_cols[0])
+        obj_depth_m = float(depth_map[fg_mask].mean())
+    else:
+        obj_w_px = w_crop * 0.8
+        obj_h_px = h_crop * 0.8
+        obj_depth_m = float(np.percentile(depth_map, 20))
+
+    obj_depth_m = max(obj_depth_m, 0.05)
+
+    fov_rad = math.radians(CAMERA_FOV_DEGREES)
+    px_to_m = (obj_depth_m * 2 * math.tan(fov_rad / 2)) / w_crop
+
+    real_w_cm = obj_w_px * px_to_m * 100
+    real_h_cm = obj_h_px * px_to_m * 100
+    volume_cm3 = real_w_cm * real_h_cm * PLASTIC_THICKNESS_CM
+
+    return {
+        "volume_cm3": round(volume_cm3, 1),
+        "width_cm":   round(real_w_cm, 1),
+        "height_cm":  round(real_h_cm, 1),
+    }
+
+
+def detect_and_classify(
+    image: Image.Image,
+    prefer_onnx: bool = True,
+) -> DetectionResult:
+    """
+    Full conveyor-belt pipeline:
+      1. Detect all plastic items (YOLO if available, else OpenCV contours)
+      2. For every detected bounding box:
+         a. Crop the region
+         b. Stage 1 — EfficientNet: plastic type + confidence
+         c. Stage 2 — CLIP: recyclability grade (A/B/C)
+         d. Stage 3 — Depth Anything: per-object volume
+      3. Render annotated image with colour-coded boxes
+      4. Return DetectionResult with per-object data + summary counts
+
+    If no objects are detected, the full image is treated as a single item
+    (fallback to the original single-item pipeline).
+    """
+    from .detector import detect_objects  # noqa: PLC0415
+
+    boxes, method = detect_objects(image)
+
+    # ── Fallback: treat whole image as one object ────────────────────────
+    if not boxes:
+        logger.info("No objects detected — treating full image as single item")
+        iw, ih = image.size
+        boxes = [(0, 0, iw, ih, 1.0)]
+        method = "full_image_fallback"
+
+    objects_out: List[Dict] = []
+
+    for idx, (x1, y1, x2, y2, det_conf) in enumerate(boxes, start=1):
+        crop = image.crop((x1, y1, x2, y2))
+
+        # Stage 1
+        label, type_conf, all_scores, _backend = classify_type(
+            crop, prefer_onnx=prefer_onnx
+        )
+
+        # Stage 2
+        grade_result = classify_grade(crop) if label != "Unknown" else None
+
+        # Stage 3
+        vol_result = _volume_for_crop(image, x1, y1, x2, y2)
+
+        obj: Dict = {
+            "object_id":             idx,
+            "bbox":                  [x1, y1, x2, y2],
+            "detection_confidence":  round(det_conf, 4),
+            "plastic_type":          label,
+            "type_confidence":       round(type_conf, 4),
+            "all_class_scores":      all_scores,
+        }
+
+        if grade_result:
+            obj["grade"]            = grade_result["grade"]
+            obj["grade_confidence"] = round(grade_result["confidence"], 4)
+            obj["grade_scores"]     = grade_result["all_scores"]
+            obj["action"]           = grade_result["action"]
+        else:
+            obj["grade"]   = None
+            obj["action"]  = "Flag for human review"
+
+        if vol_result:
+            obj["volume_cm3"] = vol_result["volume_cm3"]
+            obj["dimensions"] = {
+                "width_cm":  vol_result["width_cm"],
+                "height_cm": vol_result["height_cm"],
+            }
+
+        objects_out.append(obj)
+
+    # ── Summary ───────────────────────────────────────────────────────────
+    type_counts: Dict[str, int] = {}
+    grade_counts: Dict[str, int] = {}
+    total_volume = 0.0
+    has_volume = False
+
+    for obj in objects_out:
+        t = obj["plastic_type"]
+        type_counts[t] = type_counts.get(t, 0) + 1
+        g = obj.get("grade") or "Unknown"
+        grade_counts[g] = grade_counts.get(g, 0) + 1
+        v = obj.get("volume_cm3")
+        if v is not None:
+            total_volume += v
+            has_volume = True
+
+    # ── Annotated image ───────────────────────────────────────────────────
+    annotated = _draw_detections(image, objects_out)
+    buf = io.BytesIO()
+    annotated.save(buf, format="JPEG", quality=88)
+    img_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+
+    # ── Build typed response ──────────────────────────────────────────────
+    detected_objects = []
+    for obj in objects_out:
+        grade_scores_model = None
+        if obj.get("grade_scores"):
+            grade_scores_model = GradeScores(**obj["grade_scores"])
+
+        dims_model = None
+        if obj.get("dimensions"):
+            dims_model = Dimensions(**obj["dimensions"])
+
+        detected_objects.append(DetectedObject(
+            object_id=obj["object_id"],
+            bbox=obj["bbox"],
+            detection_confidence=obj["detection_confidence"],
+            plastic_type=obj["plastic_type"],
+            type_confidence=obj["type_confidence"],
+            all_class_scores=obj.get("all_class_scores"),
+            grade=obj.get("grade"),
+            grade_confidence=obj.get("grade_confidence"),
+            grade_scores=grade_scores_model,
+            action=obj.get("action"),
+            volume_cm3=obj.get("volume_cm3"),
+            dimensions=dims_model,
+        ))
+
+    summary = DetectionSummary(
+        total_objects=len(objects_out),
+        type_counts=type_counts,
+        grade_counts=grade_counts,
+        total_volume_cm3=round(total_volume, 1) if has_volume else None,
+    )
+
+    return DetectionResult(
+        objects=detected_objects,
+        summary=summary,
+        annotated_image_b64=img_b64,
+        detection_method=method,
+    )

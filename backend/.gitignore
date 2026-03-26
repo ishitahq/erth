@@ -52,6 +52,7 @@ env/
 .venv
 env.bak/
 venv.bak/
+kabo_env/
 
 # Large model and data files
 *.pt
