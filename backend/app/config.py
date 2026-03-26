@@ -16,6 +16,16 @@ EFFICIENTNET_CHECKPOINT = MODELS_DIR / "phase3_best.pth"
 # EfficientNet ONNX export (for faster CPU inference)
 ONNX_CHECKPOINT = MODELS_DIR / "plastic_classifier.onnx"
 
+# CLIP ViT-B/32 weights — download once, load from local path
+# Download from: https://openaipublic.azureedge.net/clip/models/
+#   40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt
+# Place at: backend/models/ViT-B-32.pt  (~338 MB)
+CLIP_CHECKPOINT = MODELS_DIR / "ViT-B-32.pt"
+CLIP_DOWNLOAD_URL = (
+    "https://openaipublic.azureedge.net/clip/models/"
+    "40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt"
+)
+
 # Depth Anything V2 checkpoint (optional — drop into models/)
 DEPTH_CHECKPOINT = MODELS_DIR / "depth_anything_v2_metric_indoor_vitl.pth"
 
