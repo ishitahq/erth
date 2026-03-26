@@ -18,6 +18,8 @@ import torch.nn as nn
 
 from .config import (
     CLASS_NAMES,
+    CLIP_CHECKPOINT,
+    CLIP_DOWNLOAD_URL,
     DEPTH_CHECKPOINT,
     DEPTH_ENCODER,
     DEPTH_MAX_DEPTH,
@@ -148,6 +150,11 @@ def load_onnx_session() -> Optional[Any]:
 def load_clip() -> Optional[Tuple[Any, Any, torch.Tensor]]:
     """
     Load CLIP ViT-B/32 and pre-encode grade text features.
+
+    Load order:
+      1. Local file  backend/models/ViT-B-32.pt  (preferred — no network needed)
+      2. Auto-download via clip.load('ViT-B/32')  (fallback, ~338 MB)
+
     Returns (model, preprocess, text_features) or None if clip not installed.
     """
     global _clip_model, _clip_preprocess, _clip_text_features
@@ -163,11 +170,24 @@ def load_clip() -> Optional[Tuple[Any, Any, torch.Tensor]]:
         )
         return None
 
-    logger.info("Loading CLIP ViT-B/32 ...")
-    _clip_model, _clip_preprocess = clip.load("ViT-B/32", device=DEVICE)
+    # Prefer local file so Docker/HF Spaces doesn't re-download on every cold start
+    if CLIP_CHECKPOINT.exists():
+        logger.info("Loading CLIP ViT-B/32 from local file %s ...", CLIP_CHECKPOINT)
+        _clip_model, _clip_preprocess = clip.load(str(CLIP_CHECKPOINT), device=DEVICE)
+    else:
+        logger.warning(
+            "CLIP local weights not found at %s. "
+            "Falling back to auto-download (~338 MB). "
+            "To avoid this, download: %s  "
+            "and place it at backend/models/ViT-B-32.pt",
+            CLIP_CHECKPOINT,
+            CLIP_DOWNLOAD_URL,
+        )
+        _clip_model, _clip_preprocess = clip.load("ViT-B/32", device=DEVICE)
+
     _clip_model.eval()
 
-    # Pre-encode grade text descriptions once; reused for every image
+    # Pre-encode grade descriptions once; reused for every image
     with torch.no_grad():
         text_tokens = clip.tokenize(GRADE_DESCRIPTIONS).to(DEVICE)
         _clip_text_features = _clip_model.encode_text(text_tokens)
