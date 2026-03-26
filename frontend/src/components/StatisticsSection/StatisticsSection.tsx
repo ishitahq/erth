@@ -56,7 +56,7 @@ export const StatisticsSection = () => {
         </motion.div>
 
         {/* Bar Stats with scroll-triggered animation */}
-        <div ref={ref} className="grid grid-cols-3 gap-4 md:gap-8 items-end mb-16 max-w-5xl mx-auto">
+        <div ref={ref} className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-8 items-end mb-12 md:mb-16 max-w-5xl mx-auto px-2 sm:px-4">
           {statisticsData.map((stat, index) => {
             // Calculate height proportional to percentage value
             const heightPercent = (stat.percentage / maxPercentage) * 100;

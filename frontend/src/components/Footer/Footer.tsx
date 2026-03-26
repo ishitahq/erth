@@ -67,7 +67,7 @@ export const Footer = () => {
       {/* Bottom Section - Dark with rotating plastic types */}
       <div className="section-dark py-16 md:py-24">
         <div className="section-container text-center">
-          <h3 className="text-5xl md:text-7xl lg:text-8xl font-black text-site-text-light tracking-tight mb-8">
+          <h3 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black text-site-text-light tracking-tight mb-8">
             Classify
           </h3>
 

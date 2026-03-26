@@ -56,14 +56,14 @@ export const ScrollRevealText = () => {
           justifyContent: 'center',
         }}
       >
-        <div className="section-container">
+        <div className="section-container px-4 sm:px-6">
           <p
             style={{
-              fontSize: 'clamp(1.2rem, 2.8vw, 2.2rem)',
+              fontSize: 'clamp(1rem, 2.5vw, 2.2rem)',
               fontWeight: 800,
               lineHeight: 1.5,
               letterSpacing: '-0.02em',
-              maxWidth: '900px',
+              maxWidth: '90vw',
               margin: '0 auto',
               textAlign: 'center',
             }}

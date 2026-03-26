@@ -135,7 +135,7 @@ const Card = ({
           card.dark ? 'text-white/30' : 'text-black/25'
         }`}
       >
-        <span>kaboai.io</span>
+        <span>kabo</span>
         <span>2025–2030</span>
       </div>
     </motion.div>
@@ -158,12 +158,12 @@ export const CardStackSection = () => {
       style={{ height: '300vh' }}
     >
       <div
-        className="sticky top-0 h-screen overflow-hidden flex items-center justify-center"
+        className="sticky top-0 h-screen overflow-hidden flex items-center justify-center px-4"
         style={{ backgroundColor: '#ede9e0' }}
       >
         {/* Subtle section label */}
         <p
-          className="absolute top-8 left-1/2 -translate-x-1/2 text-[11px] font-semibold tracking-[0.25em] uppercase text-black/30"
+          className="absolute top-4 sm:top-8 left-1/2 -translate-x-1/2 text-[10px] sm:text-[11px] font-semibold tracking-[0.25em] uppercase text-black/30"
         >
           Key Features
         </p>
@@ -172,7 +172,7 @@ export const CardStackSection = () => {
         <div
           className="relative"
           style={{
-            width: 'min(400px, 82vw)',
+            width: 'min(350px, 90vw)',
             aspectRatio: '3 / 4',
           }}
         >

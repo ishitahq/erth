@@ -63,7 +63,7 @@ export const HeroSection = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 1.2 }}
-          className="flex flex-wrap gap-4 justify-center"
+          className="flex flex-wrap gap-3 sm:gap-4 justify-center px-4"
         >
           <a href="#features" className="btn-cta !bg-[#7ed957] hover:!bg-[#5cb83f] !shadow-[#7ed957]/30 hover:!shadow-[#7ed957]/50">
             Explore Features

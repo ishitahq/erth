@@ -2,9 +2,9 @@ import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import type { MotionValue } from 'framer-motion';
 
-const CARD_W = 270;
-const CARD_H = 380;
-const SHOW_W = 120;
+const CARD_W = 280;
+const CARD_H = 400;
+const SHOW_W = 130;
 const NUM_CARDS = 6;
 const BASE_LEFT = 72;
 const BUNDLE_CENTER = 520;
@@ -173,7 +173,8 @@ const FanCard = ({
   plastic: PlasticData;
   scrollYProgress: MotionValue<number>;
 }) => {
-  const finalLeft = BASE_LEFT + (NUM_CARDS - 1 - plastic.arrival) * SHOW_W;
+  const responsiveBaseLeft = typeof window !== 'undefined' && window.innerWidth < 768 ? 16 : BASE_LEFT;
+  const finalLeft = responsiveBaseLeft + (NUM_CARDS - 1 - plastic.arrival) * SHOW_W;
   const bundleX = BUNDLE_CENTER - finalLeft;
   const zIndex = plastic.arrival + 1;
 
@@ -315,9 +316,11 @@ export const PlasticFanSection = () => {
         <div
           style={{
             position: 'absolute',
-            top: 48,
-            left: 64,
+            top: 'clamp(24px, 4vh, 48px)',
+            left: 'clamp(16px, 5vw, 64px)',
             zIndex: 100,
+            right: 'clamp(16px, 5vw, auto)',
+            maxWidth: '90vw',
           }}
         >
           <p
@@ -334,12 +337,12 @@ export const PlasticFanSection = () => {
           </p>
           <p
             style={{
-              fontSize: 'clamp(2rem, 3.5vw, 3.2rem)',
+              fontSize: 'clamp(1.5rem, 3vw, 3.2rem)',
               fontWeight: 900,
               lineHeight: 1.05,
               letterSpacing: '-0.03em',
               color: '#1a1a1a',
-              maxWidth: 520,
+              maxWidth: 'clamp(280px, 90vw, 520px)',
             }}
           >
             Our AI reads<br />
@@ -351,9 +354,9 @@ export const PlasticFanSection = () => {
         <motion.div
           style={{
             position: 'absolute',
-            right: 52,
+            right: 'clamp(16px, 5vw, 52px)',
             top: '50%',
-            width: 248,
+            maxWidth: 'clamp(200px, 90vw, 280px)',
             zIndex: 100,
             opacity: useTransform(scrollYProgress, [BUNDLE_END, BUNDLE_END + 0.05], [0, 1]),
             y: useTransform(scrollYProgress, [BUNDLE_END, BUNDLE_END + 0.05], [30, 0]),
@@ -377,19 +380,19 @@ export const PlasticFanSection = () => {
           {/* Big accuracy number */}
           <p
             style={{
-              fontSize: 92,
+              fontSize: 'clamp(48px, 12vw, 92px)',
               fontWeight: 900,
               lineHeight: 1,
               letterSpacing: '-0.04em',
               color: '#1a1a1a',
             }}
           >
-            94.7<span style={{ fontSize: 44, letterSpacing: '-0.02em' }}>%</span>
+            94.7<span style={{ fontSize: 'clamp(24px, 6vw, 44px)', letterSpacing: '-0.02em' }}>%</span>
           </p>
           <p
             style={{
               marginTop: 10,
-              fontSize: 15,
+              fontSize: 'clamp(12px, 2.5vw, 15px)',
               lineHeight: 1.6,
               color: 'rgba(0,0,0,0.52)',
               fontWeight: 500,
