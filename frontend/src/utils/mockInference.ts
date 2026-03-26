@@ -49,7 +49,7 @@ export async function classifyImage(file: File): Promise<ClassificationResult> {
 
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}/classify`, {
+    res = await fetch(`${API_BASE}/predict`, {
       method: 'POST',
       body: formData,
     });
