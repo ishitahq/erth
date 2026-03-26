@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+torch
+torchvision
+Pillow
+opencv-python
+numpy
+pandas
+albumentations
+scikit-learn
+tqdm
+matplotlib
+pytorch-grad-cam
+onnx
+onnxruntime
