@@ -1,0 +1,26 @@
+<annotation>
+	<folder>Mix Rigid</folder>
+	<filename>IN-SURAT-EV-01-03-2025-VU0001_20250617_152517_Mix_Rigid.jpeg</filename>
+	<path>C:\Users\priti\Desktop\my project\images\Mix Rigid\IN-SURAT-EV-01-03-2025-VU0001_20250617_152517_Mix_Rigid.jpeg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>mix rigid</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>201</xmin>
+			<ymin>195</ymin>
+			<xmax>319</xmax>
+			<ymax>259</ymax>
+		</bndbox>
+	</object>
+</annotation>

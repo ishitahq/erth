@@ -8,38 +8,38 @@ export interface Deliverable {
 export const deliverablesData: Deliverable[] = [
   {
     id: 1,
-    title: "Trained ML Model",
-    description: "A production-ready CNN model capable of classifying 6 plastic types from images with >90% accuracy.",
-    icon: "🧠"
+    title: "6-Type Plastic Classification",
+    description: "AI identifies PET, HDPE, LDPE, PP, PS, and PVC — each with distinct recycling pathways and melting points for accurate sorting.",
+    icon: "🔬"
   },
   {
     id: 2,
-    title: "Dataset Documentation",
-    description: "Complete dataset description including sources, preprocessing steps, augmentation techniques, and train/test splits.",
-    icon: "📋"
+    title: "Confidence Score",
+    description: "Every detection comes with a per-class confidence percentage, enabling operators to set custom acceptance thresholds.",
+    icon: "🎯"
   },
   {
     id: 3,
-    title: "Performance Evaluation",
-    description: "Comprehensive metrics: accuracy, per-class precision & recall, F1-scores, and confusion matrix analysis.",
-    icon: "📈"
+    title: "Per-Type Instance Count",
+    description: "Real-time tally of each plastic type detected in a single image — critical for batch composition analysis.",
+    icon: "📊"
   },
   {
     id: 4,
-    title: "Web Application",
-    description: "Interactive web demo where users can upload plastic waste images and receive instant AI classification.",
-    icon: "🌐"
+    title: "Annotated Bounding Box Output",
+    description: "Returns the original image with color-coded bounding boxes drawn around each detected plastic piece for visual verification.",
+    icon: "🖼️"
   },
   {
     id: 5,
-    title: "REST API",
-    description: "Production API endpoint for integration with recycling facility systems and automation pipelines.",
-    icon: "🔌"
+    title: "Volumetric Estimation",
+    description: "Approximates the volume-to-weight ratio of detected plastics using bounding box dimensions, aiding logistics and throughput planning.",
+    icon: "📐"
   },
   {
     id: 6,
-    title: "Jupyter Notebook",
-    description: "Documented notebook with full training pipeline, EDA, model architecture, and evaluation visualizations.",
-    icon: "📓"
+    title: "Recyclability Grade Prediction",
+    description: "Assigns each plastic a recyclability grade (A–D) based on type, contamination likelihood, and regional recycling infrastructure compatibility.",
+    icon: "♻️"
   }
 ];

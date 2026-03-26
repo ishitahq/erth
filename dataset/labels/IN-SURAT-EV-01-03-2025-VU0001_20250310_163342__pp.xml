@@ -1,0 +1,74 @@
+<annotation>
+	<folder>Mix PP</folder>
+	<filename>IN-SURAT-EV-01-03-2025-VU0001_20250310_163342__pp.jpeg</filename>
+	<path>C:\Users\priti\Desktop\my project\images\Mix PP\IN-SURAT-EV-01-03-2025-VU0001_20250310_163342__pp.jpeg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>mix PP</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>121</xmin>
+			<ymin>434</ymin>
+			<xmax>201</xmax>
+			<ymax>509</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>mix PP</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>234</xmin>
+			<ymin>138</ymin>
+			<xmax>365</xmax>
+			<ymax>195</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>mix PP</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>383</xmin>
+			<ymin>119</ymin>
+			<xmax>425</xmax>
+			<ymax>181</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>mix PP</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>455</xmin>
+			<ymin>172</ymin>
+			<xmax>549</xmax>
+			<ymax>269</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>mix PP</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>341</xmin>
+			<ymin>343</ymin>
+			<xmax>413</xmax>
+			<ymax>422</ymax>
+		</bndbox>
+	</object>
+</annotation>

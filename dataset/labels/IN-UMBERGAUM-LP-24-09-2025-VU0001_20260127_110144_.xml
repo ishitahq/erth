@@ -1,0 +1,74 @@
+<annotation>
+	<folder>Mix PET</folder>
+	<filename>IN-UMBERGAUM-LP-24-09-2025-VU0001_20260127_110144_.jpeg</filename>
+	<path>C:\Users\priti\Desktop\my project\images\Mix PET\IN-UMBERGAUM-LP-24-09-2025-VU0001_20260127_110144_.jpeg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>mix PET</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>392</xmin>
+			<ymin>117</ymin>
+			<xmax>467</xmax>
+			<ymax>211</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>mix PET</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>175</xmin>
+			<ymin>191</ymin>
+			<xmax>231</xmax>
+			<ymax>300</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>mix PET</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>234</xmin>
+			<ymin>246</ymin>
+			<xmax>308</xmax>
+			<ymax>377</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>mix PET</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>301</xmin>
+			<ymin>337</ymin>
+			<xmax>413</xmax>
+			<ymax>400</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>mix PET</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>335</xmin>
+			<ymin>182</ymin>
+			<xmax>390</xmax>
+			<ymax>214</ymax>
+		</bndbox>
+	</object>
+</annotation>

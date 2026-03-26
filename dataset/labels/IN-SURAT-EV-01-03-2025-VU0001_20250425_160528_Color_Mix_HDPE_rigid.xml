@@ -1,0 +1,74 @@
+<annotation>
+	<folder>Mix HD</folder>
+	<filename>IN-SURAT-EV-01-03-2025-VU0001_20250425_160528_Color_Mix_HDPE_rigid.jpeg</filename>
+	<path>C:\Users\priti\Desktop\my project\images\Mix HD\IN-SURAT-EV-01-03-2025-VU0001_20250425_160528_Color_Mix_HDPE_rigid.jpeg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>mix hd</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>283</xmin>
+			<ymin>123</ymin>
+			<xmax>435</xmax>
+			<ymax>197</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>mix hd</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>394</xmin>
+			<ymin>188</ymin>
+			<xmax>454</xmax>
+			<ymax>241</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>mix hd</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>223</xmin>
+			<ymin>238</ymin>
+			<xmax>339</xmax>
+			<ymax>313</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>mix hd</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>181</xmin>
+			<ymin>398</ymin>
+			<xmax>321</xmax>
+			<ymax>520</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>mix hd</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>409</xmin>
+			<ymin>429</ymin>
+			<xmax>546</xmax>
+			<ymax>524</ymax>
+		</bndbox>
+	</object>
+</annotation>

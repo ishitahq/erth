@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 
 const words = [
   { text: 'Classify.', gradient: false },
@@ -65,9 +66,9 @@ export const HeroSection = () => {
           transition={{ duration: 0.6, delay: 1.2 }}
           className="flex flex-wrap gap-4 justify-center"
         >
-          <a href="#features" className="btn-cta !bg-[#7ed957] hover:!bg-[#5cb83f] !shadow-[#7ed957]/30 hover:!shadow-[#7ed957]/50">
-            Explore Features
-          </a>
+          <Link to="/classify" className="btn-cta !bg-[#7ed957] hover:!bg-[#5cb83f] !shadow-[#7ed957]/30 hover:!shadow-[#7ed957]/50">
+            Try Classifier
+          </Link>
           <a href="#plastic-types" className="btn-dark !bg-white/10 !border !border-white/20 backdrop-blur hover:!bg-white/20">
             View Plastic Types
           </a>
