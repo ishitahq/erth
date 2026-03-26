@@ -48,7 +48,7 @@ export const TierCard = ({ group }: TierCardProps) => {
               <div className="mb-4">
                 <h5 className="font-semibold text-dark-green mb-3">Common Items:</h5>
                 <div className="flex flex-wrap gap-2">
-                  {group.items.map((item) => (
+                  {group.items.map((item: string) => (
                     <span
                       key={item}
                       className="bg-light-green text-white px-3 py-1 rounded-full text-sm"
