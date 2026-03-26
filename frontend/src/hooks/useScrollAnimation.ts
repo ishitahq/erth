@@ -12,12 +12,14 @@ export const useScrollAnimation = (options: UseScrollAnimationOptions = {}) => {
   const { threshold = 0.1, triggerOnce = true } = options;
 
   useEffect(() => {
+    const currentRef = ref.current;
+    
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
-          if (triggerOnce && ref.current) {
-            observer.unobserve(ref.current);
+          if (triggerOnce && currentRef) {
+            observer.unobserve(currentRef);
           }
         } else if (!triggerOnce) {
           setIsVisible(false);
@@ -26,13 +28,13 @@ export const useScrollAnimation = (options: UseScrollAnimationOptions = {}) => {
       { threshold }
     );
 
-    if (ref.current) {
-      observer.observe(ref.current);
+    if (currentRef) {
+      observer.observe(currentRef);
     }
 
     return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
+      if (currentRef) {
+        observer.unobserve(currentRef);
       }
     };
   }, [threshold, triggerOnce]);

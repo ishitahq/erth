@@ -65,7 +65,7 @@ function generateMockDetections(): Detection[] {
  * return await res.json();
  * ```
  */
-export async function mockClassify(_imageFile: File): Promise<InferenceResult> {
+export async function mockClassify(): Promise<InferenceResult> {
   const delay = randomBetween(1500, 2500);
   await new Promise((resolve) => setTimeout(resolve, delay));
 
