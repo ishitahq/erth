@@ -411,64 +411,60 @@ def _draw_detections(
 
 
 def _volume_for_crop(
-    full_image: Image.Image,
     x1: int, y1: int, x2: int, y2: int,
+    depth_map: np.ndarray,
+    full_w: int,
 ) -> Optional[Dict]:
     """
-    Estimate volume for a single detected crop.
+    Estimate volume for a single detected crop from a pre-computed depth map.
 
-    Runs Depth Anything on the full frame then restricts the foreground mask
-    to the bounding-box region so the depth estimation is object-specific.
+    Accepts the full-frame depth map (already inferred once) and the crop bbox,
+    so depth inference is NOT re-run per object.
     """
+    crop_depth = depth_map[y1:y2, x1:x2]
+    if crop_depth.size == 0:
+        return None
+
+    # Fix A: foreground mask — object is the closest pixels in the crop
+    fg_threshold = float(np.percentile(crop_depth, DEPTH_FG_PERCENTILE))
+    fg_mask = crop_depth <= fg_threshold
+    fg_pixel_count = int(fg_mask.sum())
+
+    if fg_pixel_count < 10:
+        fg_mask = np.ones_like(crop_depth, dtype=bool)
+        fg_pixel_count = crop_depth.size
+
+    obj_depth_m = float(np.median(crop_depth[fg_mask]))
+    obj_depth_m = max(obj_depth_m, 0.05)
+
+    # Use full-frame width for correct angular pixel scale
+    fov_rad = math.radians(CAMERA_FOV_DEGREES)
+    px_to_m = (obj_depth_m * 2 * math.tan(fov_rad / 2)) / full_w
+
+    # Fix B: pixel-count area instead of bounding-box extent
+    object_area_m2 = fg_pixel_count * (px_to_m ** 2)
+    side_cm = math.sqrt(object_area_m2) * 100
+    volume_cm3 = object_area_m2 * 1e4 * PLASTIC_THICKNESS_CM
+
+    return {
+        "volume_cm3": round(volume_cm3, 1),
+        "width_cm":   round(side_cm, 1),
+        "height_cm":  round(side_cm, 1),
+    }
+
+
+def _infer_full_frame_depth(image: Image.Image) -> Optional[np.ndarray]:
+    """Run Depth Anything V2 once on the full frame. Returns HxW depth array or None."""
     depth_model = load_depth_model()
     if depth_model is None:
         return None
-
     try:
         import cv2  # noqa: PLC0415
     except ImportError:
         return None
-
-    img_rgb = np.array(full_image.convert("RGB"))
-    crop_rgb = img_rgb[y1:y2, x1:x2]
-    if crop_rgb.size == 0:
-        return None
-    h_crop, w_crop = crop_rgb.shape[:2]
-
-    cv2_crop = cv2.cvtColor(crop_rgb, cv2.COLOR_RGB2BGR)
-
+    cv2_img = cv2.cvtColor(np.array(image.convert("RGB")), cv2.COLOR_RGB2BGR)
     with torch.no_grad():
-        depth_map = depth_model.infer_image(cv2_crop)
-
-    fg_threshold = float(np.percentile(depth_map, DEPTH_FG_PERCENTILE))
-    fg_mask = depth_map <= fg_threshold
-
-    fg_rows = np.where(fg_mask.any(axis=1))[0]
-    fg_cols = np.where(fg_mask.any(axis=0))[0]
-
-    if len(fg_rows) > 1 and len(fg_cols) > 1:
-        obj_h_px = float(fg_rows[-1] - fg_rows[0])
-        obj_w_px = float(fg_cols[-1] - fg_cols[0])
-        obj_depth_m = float(depth_map[fg_mask].mean())
-    else:
-        obj_w_px = w_crop * 0.8
-        obj_h_px = h_crop * 0.8
-        obj_depth_m = float(np.percentile(depth_map, 20))
-
-    obj_depth_m = max(obj_depth_m, 0.05)
-
-    fov_rad = math.radians(CAMERA_FOV_DEGREES)
-    px_to_m = (obj_depth_m * 2 * math.tan(fov_rad / 2)) / w_crop
-
-    real_w_cm = obj_w_px * px_to_m * 100
-    real_h_cm = obj_h_px * px_to_m * 100
-    volume_cm3 = real_w_cm * real_h_cm * PLASTIC_THICKNESS_CM
-
-    return {
-        "volume_cm3": round(volume_cm3, 1),
-        "width_cm":   round(real_w_cm, 1),
-        "height_cm":  round(real_h_cm, 1),
-    }
+        return depth_model.infer_image(cv2_img)
 
 
 def detect_and_classify(
@@ -502,6 +498,9 @@ def detect_and_classify(
 
     objects_out: List[Dict] = []
 
+    # ── Run depth inference ONCE on the full frame ───────────────────────
+    full_depth_map = _infer_full_frame_depth(image)
+
     for idx, (x1, y1, x2, y2, det_conf) in enumerate(boxes, start=1):
         crop = image.crop((x1, y1, x2, y2))
 
@@ -513,8 +512,11 @@ def detect_and_classify(
         # Stage 2
         grade_result = classify_grade(crop) if label != "Unknown" else None
 
-        # Stage 3
-        vol_result = _volume_for_crop(image, x1, y1, x2, y2)
+        # Stage 3 — reuse the pre-computed depth map
+        vol_result = (
+            _volume_for_crop(x1, y1, x2, y2, full_depth_map, image.width)
+            if full_depth_map is not None else None
+        )
 
         obj: Dict = {
             "object_id":             idx,
