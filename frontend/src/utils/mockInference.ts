@@ -5,7 +5,7 @@
  * If the backend is unreachable, returns a structured error.
  */
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 // ── Response types (match backend schemas.py) ────────────────────────────────
 
