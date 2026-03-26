@@ -8,6 +8,13 @@ export interface PlasticType {
   recyclability: string;
   color: string;
 }
+export type FoodGroup = {
+  name: string;
+  description: string;
+  servingRecommendation?: string;
+  items: string[];
+  imagePlaceholder?: string;
+};
 
 export const plasticTypesData: PlasticType[] = [
   {

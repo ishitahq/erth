@@ -1,83 +1,115 @@
 /**
- * Mock inference utility — simulates YOLOv8 plastic detection results.
- * Replace the `mockClassify` function body with a real `fetch()` call
- * once the backend API is deployed.
+ * API client for the Plastic Waste Classification backend.
+ * Calls POST /classify on the FastAPI server.
+ *
+ * If the backend is unreachable, returns a structured error.
  */
 
-export interface Detection {
-  classId: number;
-  className: string;
-  confidence: number;
-  bbox: { x: number; y: number; w: number; h: number }; // normalized 0-1
-  color: string;
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+// ── Response types (match backend schemas.py) ────────────────────────────────
+
+export interface GradeScores {
+  A: number | null;
+  B: number | null;
+  C: number | null;
 }
 
-export interface InferenceResult {
-  detections: Detection[];
-  inferenceTimeMs: number;
+export interface Dimensions {
+  width_cm: number;
+  height_cm: number;
 }
 
-const CLASS_INFO: Record<number, { name: string; color: string }> = {
-  0: { name: 'PP', color: '#7ed957' },
-  1: { name: 'HDPE', color: '#52a8db' },
-  2: { name: 'PET', color: '#e74c3c' },
-  3: { name: 'Rigid', color: '#9b59b6' },
-};
+export interface ClassificationResult {
+  // Stage 1 — Type
+  plastic_type: string;
+  type_confidence: number;
+  all_class_scores: Record<string, number> | null;
 
-function randomBetween(min: number, max: number): number {
-  return Math.random() * (max - min) + min;
+  // Stage 2 — Grade
+  grade: string | null;
+  grade_confidence: number | null;
+  grade_scores: GradeScores | null;
+  action: string | null;
+
+  // Stage 3 — Volume
+  volume_cm3: number | null;
+  dimensions: Dimensions | null;
+
+  // Meta
+  backend_used: string;
+  tta_used: boolean;
 }
 
-function generateMockDetections(): Detection[] {
-  const count = Math.floor(randomBetween(2, 6));
-  const detections: Detection[] = [];
+// ── API call ─────────────────────────────────────────────────────────────────
 
-  for (let i = 0; i < count; i++) {
-    const classId = Math.floor(Math.random() * 4);
-    const info = CLASS_INFO[classId];
+export async function classifyImage(file: File): Promise<ClassificationResult> {
+  const formData = new FormData();
+  formData.append('file', file);
 
-    // Generate non-overlapping bounding boxes spread across the image
-    const bw = randomBetween(0.12, 0.30);
-    const bh = randomBetween(0.12, 0.30);
-    const bx = randomBetween(0.05, 0.95 - bw);
-    const by = randomBetween(0.05, 0.95 - bh);
-
-    detections.push({
-      classId,
-      className: info.name,
-      confidence: randomBetween(0.72, 0.99),
-      bbox: { x: bx, y: by, w: bw, h: bh },
-      color: info.color,
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/classify`, {
+      method: 'POST',
+      body: formData,
     });
+  } catch {
+    throw new Error(
+      'Cannot connect to the backend server. Make sure uvicorn is running:\n' +
+      'cd backend && python -m uvicorn app.main:app --port 8000'
+    );
   }
 
-  return detections;
+  if (!res.ok) {
+    let detail = '';
+    try { detail = await res.text(); } catch { /* ignore */ }
+    throw new Error(`Classification failed (${res.status}): ${detail || 'Unknown server error'}`);
+  }
+
+  return res.json();
 }
 
-/**
- * Simulate model inference with a delay.
- * Replace this function body with a real API call when the backend is ready:
- *
- * ```ts
- * const formData = new FormData();
- * formData.append('file', imageFile);
- * const res = await fetch('http://localhost:8000/predict', { method: 'POST', body: formData });
- * return await res.json();
- * ```
- */
-export async function mockClassify(): Promise<InferenceResult> {
-  const delay = randomBetween(1500, 2500);
-  await new Promise((resolve) => setTimeout(resolve, delay));
+// ── Health check ─────────────────────────────────────────────────────────────
 
-  return {
-    detections: generateMockDetections(),
-    inferenceTimeMs: Math.round(delay),
-  };
+export async function checkHealth(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
+
+// ── Display helpers ──────────────────────────────────────────────────────────
+
+export const CLASS_COLORS: Record<string, string> = {
+  PET:   '#e74c3c',
+  HDPE:  '#52a8db',
+  LDPE:  '#f39c12',
+  PP:    '#7ed957',
+  PS:    '#9b59b6',
+  OTHER: '#95a5a6',
+  Unknown: '#6b7280',
+};
+
+export const GRADE_COLORS: Record<string, string> = {
+  A: '#7ed957',
+  B: '#f59e0b',
+  C: '#ef4444',
+};
+
+export const GRADE_LABELS: Record<string, string> = {
+  A: 'Recyclable',
+  B: 'Needs Pre-Processing',
+  C: 'Not Recyclable',
+};
 
 export const RECYCLING_TIPS: Record<string, string> = {
-  PP: 'Recyclable — used in yogurt cups, bottle caps, and straws. Wash before recycling.',
-  HDPE: 'Highly recyclable — found in milk jugs and detergent bottles. One of the easiest plastics to recycle.',
-  PET: 'Most recyclable — water bottles and food containers. Rinse and remove labels when possible.',
-  Rigid: 'Check local guidelines — rigid plastics vary. Some facilities accept them, others don\'t.',
+  PET:   'Most recyclable — water bottles and food containers. Rinse and remove labels when possible.',
+  HDPE:  'Highly recyclable — found in milk jugs and detergent bottles. One of the easiest plastics to recycle.',
+  LDPE:  'Limited recyclability — plastic bags and wraps. Check if your local facility accepts them.',
+  PP:    'Recyclable — used in yogurt cups, bottle caps, and straws. Wash before recycling.',
+  PS:    'Difficult to recycle — styrofoam cups and packing peanuts. Most facilities do not accept PS.',
+  OTHER: 'Mixed or multi-layer plastic — check local guidelines. Often not recyclable.',
+  Unknown: 'Could not identify plastic type. Manual inspection recommended.',
 };

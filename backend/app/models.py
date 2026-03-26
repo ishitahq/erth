@@ -1,18 +1,25 @@
 """
-Model loading with lazy initialization — models cached globally.
+Model loading with lazy initialization — all models cached globally.
 
-Each loader returns None if the checkpoint / dependency is missing,
-allowing the API to gracefully degrade.
+Load priority:
+  - EfficientNet: PyTorch (.pth) first, ONNX (.onnx) as fallback for CPU
+  - CLIP: openai/CLIP package (install separately)
+  - Depth: Depth Anything V2 (optional, requires manual install)
+
+All loaders return None if the checkpoint or dependency is missing,
+allowing the API to gracefully degrade per stage.
 """
 
 import logging
-from typing import Any
+from typing import Any, Optional, Tuple
 
 import torch
 import torch.nn as nn
 
 from .config import (
     CLASS_NAMES,
+    CLIP_CHECKPOINT,
+    CLIP_DOWNLOAD_URL,
     DEPTH_CHECKPOINT,
     DEPTH_ENCODER,
     DEPTH_MAX_DEPTH,
@@ -20,6 +27,7 @@ from .config import (
     EFFICIENTNET_CHECKPOINT,
     GRADE_DESCRIPTIONS,
     NUM_CLASSES,
+    ONNX_CHECKPOINT,
 )
 
 logger = logging.getLogger(__name__)
@@ -39,25 +47,28 @@ DEVICE = get_device()
 
 # ── Global model cache ───────────────────────────────────────────────────────
 
-_efficientnet: nn.Module | None = None
-_clip_model: Any = None
-_clip_preprocess: Any = None
-_clip_text_features: torch.Tensor | None = None
-_depth_model: Any = None
+_efficientnet: Optional[nn.Module] = None
+_onnx_session: Optional[Any] = None
+_clip_model: Optional[Any] = None
+_clip_preprocess: Optional[Any] = None
+_clip_text_features: Optional[torch.Tensor] = None
+_depth_model: Optional[Any] = None
 
 
-# ── EfficientNet-B3 ─────────────────────────────────────────────────────────
+# ── EfficientNet-B3 (PyTorch) ────────────────────────────────────────────────
 
 def _build_efficientnet() -> nn.Module:
-    """Build EfficientNet-B3 with the custom 6-class classifier head from the notebook."""
+    """
+    Build EfficientNet-B3 with the custom 6-class classifier head.
+    Matches notebook Step 4: Dropout(0.3) → Linear(1536, 512) → ReLU → Dropout(0.2) → Linear(512, 6)
+    """
     try:
-        from torchvision.models import efficientnet_b3
+        from torchvision.models import efficientnet_b3, EfficientNet_B3_Weights
         model = efficientnet_b3(weights=None)
-    except ImportError:
+    except (ImportError, TypeError):
         import torchvision
         model = torchvision.models.efficientnet_b3(pretrained=False)
 
-    # Custom classifier head matching notebook Step 4
     model.classifier = nn.Sequential(
         nn.Dropout(p=0.3),
         nn.Linear(1536, 512),
@@ -68,8 +79,8 @@ def _build_efficientnet() -> nn.Module:
     return model
 
 
-def load_efficientnet() -> nn.Module | None:
-    """Load EfficientNet-B3 from checkpoint. Returns None if checkpoint missing."""
+def load_efficientnet() -> Optional[nn.Module]:
+    """Load EfficientNet-B3 from .pth checkpoint. Returns None if missing."""
     global _efficientnet
     if _efficientnet is not None:
         return _efficientnet
@@ -77,19 +88,21 @@ def load_efficientnet() -> nn.Module | None:
     if not EFFICIENTNET_CHECKPOINT.exists():
         logger.warning(
             "EfficientNet checkpoint not found at %s. "
-            "Place phase3_best.pth in backend/checkpoints/",
+            "Place phase3_best.pth in backend/models/",
             EFFICIENTNET_CHECKPOINT,
         )
         return None
 
-    logger.info("Loading EfficientNet-B3 from %s ...", EFFICIENTNET_CHECKPOINT)
+    logger.info("Loading EfficientNet-B3 (PyTorch) from %s ...", EFFICIENTNET_CHECKPOINT)
     model = _build_efficientnet()
 
-    state_dict = torch.load(EFFICIENTNET_CHECKPOINT, map_location=DEVICE)
-    # Handle both raw state_dict and wrapped format
-    if isinstance(state_dict, dict) and "model_state_dict" in state_dict:
-        state_dict = state_dict["model_state_dict"]
-
+    # Handles both raw state_dict and {'model_state_dict': ...} wrapped format
+    checkpoint = torch.load(
+        EFFICIENTNET_CHECKPOINT,
+        map_location=DEVICE,
+        weights_only=False,
+    )
+    state_dict = checkpoint.get("model_state_dict", checkpoint)
     model.load_state_dict(state_dict)
     model.to(DEVICE).eval()
     _efficientnet = model
@@ -97,11 +110,51 @@ def load_efficientnet() -> nn.Module | None:
     return _efficientnet
 
 
+# ── EfficientNet (ONNX) ──────────────────────────────────────────────────────
+
+def load_onnx_session() -> Optional[Any]:
+    """
+    Load ONNX runtime inference session from plastic_classifier.onnx.
+    Preferred backend for CPU inference. Returns None if unavailable.
+    """
+    global _onnx_session
+    if _onnx_session is not None:
+        return _onnx_session
+
+    if not ONNX_CHECKPOINT.exists():
+        logger.warning(
+            "ONNX model not found at %s. Place plastic_classifier.onnx in backend/models/",
+            ONNX_CHECKPOINT,
+        )
+        return None
+
+    try:
+        import onnxruntime as ort
+    except ImportError:
+        logger.warning("onnxruntime not installed. ONNX inference unavailable. pip install onnxruntime")
+        return None
+
+    logger.info("Loading ONNX session from %s ...", ONNX_CHECKPOINT)
+    providers = (
+        ["CUDAExecutionProvider", "CPUExecutionProvider"]
+        if torch.cuda.is_available()
+        else ["CPUExecutionProvider"]
+    )
+    _onnx_session = ort.InferenceSession(str(ONNX_CHECKPOINT), providers=providers)
+    logger.info("ONNX session ready (providers: %s)", _onnx_session.get_providers())
+    return _onnx_session
+
+
 # ── CLIP ViT-B/32 ───────────────────────────────────────────────────────────
 
-def load_clip() -> tuple[Any, Any, torch.Tensor] | None:
+def load_clip() -> Optional[Tuple[Any, Any, torch.Tensor]]:
     """
     Load CLIP ViT-B/32 and pre-encode grade text features.
+
+    Load order:
+      1. Local file  backend/models/ViT-B-32.pt  (preferred — no network needed)
+      2. Auto-download via clip.load('ViT-B/32')  (fallback, ~338 MB)
+
     Returns (model, preprocess, text_features) or None if clip not installed.
     """
     global _clip_model, _clip_preprocess, _clip_text_features
@@ -113,15 +166,28 @@ def load_clip() -> tuple[Any, Any, torch.Tensor] | None:
     except ImportError:
         logger.warning(
             "CLIP not installed. Grade classification unavailable. "
-            "Install with: pip install git+https://github.com/openai/CLIP.git"
+            "Install: pip install git+https://github.com/openai/CLIP.git"
         )
         return None
 
-    logger.info("Loading CLIP ViT-B/32 ...")
-    _clip_model, _clip_preprocess = clip.load("ViT-B/32", device=DEVICE)
+    # Prefer local file so Docker/HF Spaces doesn't re-download on every cold start
+    if CLIP_CHECKPOINT.exists():
+        logger.info("Loading CLIP ViT-B/32 from local file %s ...", CLIP_CHECKPOINT)
+        _clip_model, _clip_preprocess = clip.load(str(CLIP_CHECKPOINT), device=DEVICE)
+    else:
+        logger.warning(
+            "CLIP local weights not found at %s. "
+            "Falling back to auto-download (~338 MB). "
+            "To avoid this, download: %s  "
+            "and place it at backend/models/ViT-B-32.pt",
+            CLIP_CHECKPOINT,
+            CLIP_DOWNLOAD_URL,
+        )
+        _clip_model, _clip_preprocess = clip.load("ViT-B/32", device=DEVICE)
+
     _clip_model.eval()
 
-    # Pre-encode grade descriptions (done once, reused for all images)
+    # Pre-encode grade descriptions once; reused for every image
     with torch.no_grad():
         text_tokens = clip.tokenize(GRADE_DESCRIPTIONS).to(DEVICE)
         _clip_text_features = _clip_model.encode_text(text_tokens)
@@ -135,7 +201,7 @@ def load_clip() -> tuple[Any, Any, torch.Tensor] | None:
 
 # ── Depth Anything V2 ───────────────────────────────────────────────────────
 
-def load_depth_model() -> Any | None:
+def load_depth_model() -> Optional[Any]:
     """Load Depth Anything V2 metric indoor model. Returns None if unavailable."""
     global _depth_model
     if _depth_model is not None:
@@ -162,7 +228,7 @@ def load_depth_model() -> Any | None:
     config = DEPTH_MODEL_CONFIGS[DEPTH_ENCODER]
     _depth_model = DepthAnythingV2(**config, max_depth=DEPTH_MAX_DEPTH)
     _depth_model.load_state_dict(
-        torch.load(DEPTH_CHECKPOINT, map_location=DEVICE)
+        torch.load(DEPTH_CHECKPOINT, map_location=DEVICE, weights_only=False)
     )
     _depth_model.to(DEVICE).eval()
     logger.info("Depth model loaded on %s", DEVICE)

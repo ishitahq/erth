@@ -2,14 +2,15 @@
 Pydantic response schemas for the classification API.
 """
 
+from typing import Optional
 from pydantic import BaseModel
 
 
 class GradeScores(BaseModel):
     """Per-grade confidence breakdown from CLIP zero-shot."""
-    A: float | None = None
-    B: float | None = None
-    C: float | None = None
+    A: Optional[float] = None
+    B: Optional[float] = None
+    C: Optional[float] = None
 
 
 class Dimensions(BaseModel):
@@ -22,23 +23,29 @@ class ClassificationResult(BaseModel):
     """Full hierarchical classification result for a single image."""
 
     # Stage 1 — EfficientNet-B3 type classification
-    plastic_type: str  # one of CLASS_NAMES or "Unknown"
-    type_confidence: float  # max softmax probability
+    plastic_type: str          # one of CLASS_NAMES or "Unknown"
+    type_confidence: float     # max softmax probability
+    all_class_scores: Optional[dict] = None  # per-class softmax probabilities
 
     # Stage 2 — CLIP grade classification (nullable if CLIP unavailable)
-    grade: str | None = None  # A, B, C, or None
-    grade_confidence: float | None = None
-    grade_scores: GradeScores | None = None
-    action: str | None = None  # recommended recycling action
+    grade: Optional[str] = None              # A, B, C, or None
+    grade_confidence: Optional[float] = None
+    grade_scores: Optional[GradeScores] = None
+    action: Optional[str] = None             # recommended recycling action
 
     # Stage 3 — Volumetric estimation (nullable if depth model unavailable)
-    volume_cm3: float | None = None
-    dimensions: Dimensions | None = None
+    volume_cm3: Optional[float] = None
+    dimensions: Optional[Dimensions] = None
+
+    # Meta
+    backend_used: str = "pytorch"  # "pytorch" or "onnx"
+    tta_used: bool = False
 
 
 class ModelStatus(BaseModel):
     """Availability status for each model."""
-    efficientnet: bool = False
+    efficientnet_pytorch: bool = False
+    efficientnet_onnx: bool = False
     clip: bool = False
     depth: bool = False
 
