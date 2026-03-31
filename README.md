@@ -51,7 +51,7 @@ Image → Type Classification → Recyclability Grading → Volume Estimation �
 
 ---
 
-## 🧪 Dataset Strategy
+## Dataset Strategy
 
 ### TIP (Trash Image Project)
 * Pascal VOC XML annotations
@@ -79,6 +79,7 @@ Image → Type Classification → Recyclability Grading → Volume Estimation �
 ## ⚙️ Training Strategy (Core Innovation)
 
 ### 3-Phase Progressive Fine-Tuning
+
 | Phase   | Description                    | Purpose                           |
 | ------- | ------------------------------ | --------------------------------- |
 | Phase 1 | Frozen backbone, WaDaBa only   | Learn clean class representations |
@@ -117,6 +118,7 @@ Designed to simulate real conveyor conditions:
 
 ### Clean Test Set
 * **Accuracy:** 98.77%
+
 | Class | F1 Score |
 | ----- | -------- |
 | LDPE  | 1.00     |
@@ -129,6 +131,7 @@ Designed to simulate real conveyor conditions:
 ---
 
 ### Real-World Conveyor Performance
+
 | Metric              | Value |
 | ------------------- | ----- |
 | Accuracy            | 40.7% |
@@ -141,6 +144,7 @@ Designed to simulate real conveyor conditions:
 
 ## Domain Shift Analysis (Key Insight)
 The major challenge is the difference between:
+
 | Lab Data            | Conveyor Data                |
 | ------------------- | ---------------------------- |
 | Clean background    | Complex background           |
@@ -170,6 +174,7 @@ The major challenge is the difference between:
 ### Stage 2 — Recyclability Grade (CLIP)
 * Zero-shot classification
 * No labeled dataset required
+
 | Grade | Meaning             |
 | ----- | ------------------- |
 | A     | Clean, recyclable   |
@@ -215,6 +220,7 @@ The major challenge is the difference between:
 ---
 
 ## 🛠️ Tech Stack
+
 | Layer           | Technology            |
 | --------------- | --------------------- |
 | ML              | PyTorch, EfficientNet |
