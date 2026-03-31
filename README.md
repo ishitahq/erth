@@ -117,7 +117,8 @@ Designed to simulate real conveyor conditions:
 ## 📊 Performance
 
 ### Clean Test Set
-* **Accuracy:** 98.77%
+
+**Accuracy:** 98.77%
 
 | Class | F1 Score |
 | ----- | -------- |
@@ -169,8 +170,6 @@ The major challenge is the difference between:
 * Outputs: `{type, confidence}`
 * Unknown if confidence < 0.70
 
----
-
 ### Stage 2 — Recyclability Grade (CLIP)
 * Zero-shot classification
 * No labeled dataset required
@@ -181,13 +180,9 @@ The major challenge is the difference between:
 | B     | Needs preprocessing |
 | C     | Reject              |
 
----
-
 ### Stage 3 — Volume Estimation
 * Depth Anything V2
 * Uses monocular depth + geometry
-
----
 
 ### Stage 4 — Detection
 * YOLOv8-nano
@@ -236,6 +231,8 @@ The major challenge is the difference between:
 * FastAPI inference server
 * YOLO detection API
 * ONNX export for optimized runtime
+
+---
 
 ## Contributing
 1. Fork the repository
