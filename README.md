@@ -1,160 +1,239 @@
-# ♻️ Erth — AI-Powered Plastic Waste Classification System
+# ♻️ Erth — Robust AI System for Plastic Waste Analysis
 
-Erth is an AI/ML-based system that automatically classifies plastic waste into specific types using images — enabling smarter recycling, reducing contamination, and building a circular economy.
+Erth is a **multi-stage AI perception system** designed for real-world plastic waste processing. It goes beyond simple classification by combining **deep learning, zero-shot reasoning, depth estimation, and object detection** to enable intelligent recycling pipelines.
 
----
-
-## 🌍 Problem Context
-
-Plastic waste is one of the most critical environmental challenges due to its non-biodegradable nature and long-term ecological impact. Recycling is key to building sustainable and circular economies, but its effectiveness depends on correctly identifying plastic types.
-
-Different plastics — **PET, HDPE, LDPE, PP, and PS** — have unique chemical properties, melting points, and recycling methods. Incorrect classification leads to:
-
-- **Contamination** of recycling streams
-- **Reduced quality** of recycled materials
-- **Lower economic value** of output
-
-Currently, plastic identification in recycling facilities is mostly **manual**, making the process slow, labor-intensive, and prone to errors — especially with dirty, mixed, or deformed plastic waste.
+> **Core Idea:** Not just classify plastic — *understand it, evaluate it, and quantify it*.
 
 ---
 
-## 🎯 The Core Challenge
+## 🌍 Problem Overview
 
-Develop an AI/ML-based system that can automatically classify plastic waste into specific types using images.
+Plastic recycling systems depend heavily on **accurate material identification**, but real-world conditions introduce major challenges:
+* Dirty, deformed, and overlapping waste
+* Inconsistent lighting and motion blur
+* Visually similar polymer types
+* Severe **domain gap** between lab data and industrial conveyor environments
 
-The system must:
-
-- Accurately distinguish between visually similar plastic categories
-- Handle real-world conditions such as dirt, deformation, and lighting variations
-- Minimize misclassification to reduce contamination in recycling streams
-- Generalize well across diverse datasets and environments
-
----
-
-## ✨ Features
-
-### Core Features
-
-- **Image-based classification** of plastic waste
-- **Multi-class prediction** across categories:
-
-| Code | Plastic Type | Description |
-|------|-------------|-------------|
-| #1 | **PET** | Polyethylene Terephthalate |
-| #2 | **HDPE** | High-Density Polyethylene |
-| #3 | **LDPE** | Low-Density Polyethylene |
-| #4 | **PP** | Polypropylene |
-| #5 | **PS** | Polystyrene |
-| #6 | **Other** | Mixed / Unknown Plastics |
-
-- **Robust performance** on real-world waste images (dirty, deformed, mixed)
-
-### Optional Enhancements
-
-- 📊 **Confidence score** for each prediction
-- 🏷️ **Hierarchical classification** (Type → Grade)
-- ⚡ **Lightweight model** for edge deployment
-- 📐 **Volumetric estimation** of plastic waste using images
+Misclassification leads to:
+* Contaminated recycling streams
+* Reduced material quality
+* Economic loss
 
 ---
 
-## 📦 Expected Output
+## System Overview
 
-The final system delivers:
+Erth is designed as a **multi-stage pipeline**, where each stage solves a specific sub-problem:
 
-1. **Trained ML Model** — Capable of classifying plastic types from images
-2. **Dataset Documentation** — Sources, preprocessing steps, and augmentation techniques
-3. **Performance Evaluation** using:
-   - Accuracy
-   - Precision and Recall (per plastic category)
-   - Confusion Matrix
-4. **Working Demonstration** — Web application, REST API, or Jupyter notebook
+```
+Image → Type Classification → Recyclability Grading → Volume Estimation → Detection → Structured Output
+```
+
+---
+
+## 🏗️ Architecture
+
+<img width="2048" height="1117" alt="image" src="https://github.com/user-attachments/assets/e0b8c3c8-ea59-49db-b884-930d82088ac9" />
+
+
+### Training Pipeline
+* Dual dataset integration (**TIP + WaDaBa**)
+* Label normalization (collapse noisy labels → 6 classes)
+* Class imbalance handling (5× skew)
+* Progressive training strategy (3-phase fine-tuning)
+
+### Inference Pipeline
+* EfficientNet-based classification
+* CLIP-based grading
+* Depth-based volume estimation
+* YOLOv8 multi-object detection
+* Structured JSON outputs
+
+---
+
+## 🧪 Dataset Strategy
+
+### TIP (Trash Image Project)
+* Pascal VOC XML annotations
+* Noisy labels → normalized to 6 classes
+
+### WaDaBa (Waste Database Bavaria)
+* Filename-encoded labels
+* Includes **deformation (d0–d3)** and **dirtiness (e0–e3)** metadata
+
+### Unified Dataset
+* Combined and balanced dataset
+* Class weights computed (up to **5.15× imbalance**)
+
+---
+
+## Model Design
+
+### Backbone: EfficientNet-B3
+* 300×300 input resolution
+* Compound scaling (better accuracy per FLOP)
+* Custom classifier head with dropout for regularization
+
+---
+
+## ⚙️ Training Strategy (Core Innovation)
+
+### 3-Phase Progressive Fine-Tuning
+| Phase   | Description                    | Purpose                           |
+| ------- | ------------------------------ | --------------------------------- |
+| Phase 1 | Frozen backbone, WaDaBa only   | Learn clean class representations |
+| Phase 2 | Partial unfreeze, unified data | Adapt to noisy + diverse data     |
+| Phase 3 | Full fine-tuning with SAM      | Improve real-world generalization |
+
+---
+
+### Advanced Optimization
+
+#### Focal Loss (γ = 2)
+* Focuses learning on hard examples
+* Handles minority classes (LDPE, PS)
+
+#### Weighted Random Sampling
+* Ensures balanced batch composition
+
+#### Sharpness-Aware Minimization (SAM)
+* Avoids sharp minima
+* Improves robustness to domain shift
+
+---
+
+## Augmentation Strategy
+Designed to simulate real conveyor conditions:
+* CLAHE (contrast normalization)
+* Rotation (±45°), flips
+* Motion blur simulation
+* Color jitter (lighting variation)
+* Grayscale (texture learning)
+* Occlusion (CoarseDropout)
+
+---
+
+## 📊 Performance
+
+### Clean Test Set
+* **Accuracy:** 98.77%
+| Class | F1 Score |
+| ----- | -------- |
+| LDPE  | 1.00     |
+| OTHER | 1.00     |
+| PET   | 0.98     |
+| HDPE  | 0.99     |
+| PP    | 0.97     |
+| PS    | 0.96     |
+
+---
+
+### Real-World Conveyor Performance
+| Metric              | Value |
+| ------------------- | ----- |
+| Accuracy            | 40.7% |
+| Confidence Drop     | 27.3% |
+| Unknown Predictions | 58%   |
+
+👉 Reveals a **57.5% domain gap**
+
+---
+
+## Domain Shift Analysis (Key Insight)
+The major challenge is the difference between:
+| Lab Data            | Conveyor Data                |
+| ------------------- | ---------------------------- |
+| Clean background    | Complex background           |
+| Single object       | Multiple overlapping objects |
+| Well-lit            | Industrial lighting          |
+| Minimal deformation | Heavy deformation            |
+
+---
+
+## 🛠️ Mitigation Techniques
+* Sharpness-aware training (SAM)
+* Test-Time Augmentation (8-view averaging)
+* CLAHE normalization
+* Robust augmentation pipeline
+
+---
+
+## Inference Pipeline
+
+### Stage 1 — Plastic Type
+* EfficientNet-B3
+* Outputs: `{type, confidence}`
+* Unknown if confidence < 0.70
+
+---
+
+### Stage 2 — Recyclability Grade (CLIP)
+* Zero-shot classification
+* No labeled dataset required
+| Grade | Meaning             |
+| ----- | ------------------- |
+| A     | Clean, recyclable   |
+| B     | Needs preprocessing |
+| C     | Reject              |
+
+---
+
+### Stage 3 — Volume Estimation
+* Depth Anything V2
+* Uses monocular depth + geometry
+
+---
+
+### Stage 4 — Detection
+* YOLOv8-nano
+* Multi-object detection on conveyor frames
+
+---
+
+## Output Format
+
+```json
+{
+  "type": "HDPE",
+  "type_conf": 0.91,
+  "grade": "A",
+  "grade_conf": 0.88,
+  "volume_cm3": 142.3,
+  "dimensions": {...}
+}
+```
+
+---
+
+## ⚡ Key Innovations
+* Multi-model hybrid pipeline (CNN + CLIP + Depth + YOLO)
+* SAM-based training for real-world robustness
+* Explicit domain shift analysis
+* Zero-shot grading (no extra data required)
+* Depth-based volumetric estimation
 
 ---
 
 ## 🛠️ Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React, TypeScript, Vite, Tailwind CSS |
-| Animations | Framer Motion |
-| ML Model | CNN with Transfer Learning (ResNet / EfficientNet) |
-| Training | Data Augmentation, Fine-tuning |
-| Deployment | Web App, REST API, Edge Devices |
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) (v18+)
-- npm or yarn
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/your-username/erth.git
-cd erth/frontend
-
-# Install dependencies
-npm install
-
-# Start the development server
-npm run dev
-```
-
-The app will be running at `http://localhost:5173`.
-
-### Production Build
-
-```bash
-npm run build
-```
+| Layer           | Technology            |
+| --------------- | --------------------- |
+| ML              | PyTorch, EfficientNet |
+| Detection       | YOLOv8                |
+| Vision-Language | CLIP                  |
+| Depth           | Depth Anything V2     |
+| Backend         | FastAPI               |
+| Frontend        | React, TypeScript     |
 
 ---
 
-## 📁 Project Structure
+## 🚀 Deployment
+* FastAPI inference server
+* YOLO detection API
+* ONNX export for optimized runtime
 
-```
-frontend/
-├── src/
-│   ├── components/       # UI components (HeroSection, StatisticsSection, FAQSection, etc.)
-│   ├── data/             # Static data (FAQ, statistics, plastic types, etc.)
-│   ├── hooks/            # Custom React hooks (scroll animations)
-│   ├── utils/            # Utility functions
-│   ├── assets/           # Static assets
-│   ├── App.tsx           # Main application component
-│   ├── index.css         # Global styles and design tokens
-│   └── main.tsx          # Application entry point
-├── public/               # Public assets (images, icons)
-├── index.html            # HTML entry point
-├── tailwind.config.js    # Tailwind CSS configuration
-├── vite.config.ts        # Vite configuration
-└── package.json          # Dependencies and scripts
-```
-
----
-
-## 📊 ML Pipeline
-
-```
-Data Collection → Preprocessing & Augmentation → Model Training → Evaluation & Optimization → Deployment
-```
-
-1. **Data Collection** — Diverse plastic waste images from public datasets and custom sources
-2. **Preprocessing & Augmentation** — Resize, normalize, rotate, flip, noise, and color jitter
-3. **Model Training** — CNN with transfer learning (ResNet/EfficientNet), fine-tuned on plastic waste
-4. **Evaluation** — Accuracy, precision, recall, confusion matrix, and threshold optimization
-5. **Deployment** — Web app, REST API, or edge device integration
-
----
-
-## 📄 License
-
-This project is developed as part of an academic / hackathon problem statement on plastic waste classification.
-
----
-
-> **Erth** — *Classify. Recycle. Sustain.* ♻️
+## Contributing
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/new-feature`)
+3. Commit your changes (`git commit -m 'Add feature'`)
+4. Push to the branch (`git push origin feature/new-feature`)
+5. Open a Pull Request
